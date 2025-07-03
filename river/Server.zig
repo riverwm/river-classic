@@ -91,6 +91,9 @@ data_control_manager: *wlr.DataControlManagerV1,
 export_dmabuf_manager: *wlr.ExportDmabufManagerV1,
 screencopy_manager: *wlr.ScreencopyManagerV1,
 
+image_copy_capture_manager: *wlr.ExtImageCopyCaptureManagerV1,
+output_image_capture_source_manager: *wlr.ExtOutputImageCaptureSourceManagerV1,
+
 foreign_toplevel_manager: *wlr.ForeignToplevelManagerV1,
 
 foreign_toplevel_list: *wlr.ExtForeignToplevelListV1,
@@ -175,6 +178,9 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
 
         .export_dmabuf_manager = try wlr.ExportDmabufManagerV1.create(wl_server),
         .screencopy_manager = try wlr.ScreencopyManagerV1.create(wl_server),
+
+        .image_copy_capture_manager = try wlr.ExtImageCopyCaptureManagerV1.create(wl_server, 1),
+        .output_image_capture_source_manager = try wlr.ExtOutputImageCaptureSourceManagerV1.create(wl_server, 1),
 
         .foreign_toplevel_manager = try wlr.ForeignToplevelManagerV1.create(wl_server),
 
@@ -384,6 +390,8 @@ fn blocklist(server: *Server, global: *const wl.Global) bool {
         global == server.foreign_toplevel_manager.global or
         global == server.foreign_toplevel_list.global or
         global == server.screencopy_manager.global or
+        global == server.image_copy_capture_manager.global or
+        global == server.output_image_capture_source_manager.global or
         global == server.export_dmabuf_manager.global or
         global == server.data_control_manager.global or
         global == server.layout_manager.global or
