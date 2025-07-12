@@ -97,6 +97,7 @@ pub fn create(wlr_toplevel: *wlr.XdgToplevel) error{OutOfMemory}!void {
     errdefer toplevel.unmap.link.remove();
 
     _ = try view.surface_tree.createSceneXdgSurface(wlr_toplevel.base);
+    _ = try view.image_capture_scene.tree.createSceneXdgSurface(wlr_toplevel.base);
 
     toplevel.view = view;
 

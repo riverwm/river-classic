@@ -140,6 +140,9 @@ saved_surface_tree: *wlr.SceneTree,
 borders: [4]*wlr.SceneRect,
 popup_tree: *wlr.SceneTree,
 
+image_capture_scene: *wlr.Scene,
+image_capture_source: ?*wlr.ExtImageCaptureSourceV1,
+
 /// Bounds on the width/height of the view, set by the toplevel/xwayland_view implementation.
 constraints: Constraints = .{},
 
@@ -215,6 +218,9 @@ pub fn create(impl: Impl) error{OutOfMemory}!*View {
         },
         .popup_tree = popup_tree,
 
+        .image_capture_scene = try wlr.Scene.create(),
+        .image_capture_source = null,
+
         .pending_wm_stack_link = undefined,
         .pending_focus_stack_link = undefined,
         .inflight_wm_stack_link = undefined,
@@ -230,6 +236,7 @@ pub fn create(impl: Impl) error{OutOfMemory}!*View {
     view.tree.node.setEnabled(false);
     view.popup_tree.node.setEnabled(false);
     view.saved_surface_tree.node.setEnabled(false);
+    view.image_capture_scene.restack_xwayland_surfaces = false;
 
     try SceneNodeData.attach(&view.tree.node, .{ .view = view });
     try SceneNodeData.attach(&view.popup_tree.node, .{ .view = view });
@@ -250,6 +257,7 @@ pub fn destroy(view: *View, when: enum { lazy, assert }) void {
     // around until the current transaction completes. This function will be
     // called again in Root.commitTransaction()
     if (!view.saved_surface_tree.node.enabled) {
+        view.image_capture_scene.tree.node.destroy();
         view.tree.node.destroy();
         view.popup_tree.node.destroy();
 
@@ -665,6 +673,7 @@ pub fn map(view: *View) !void {
         .app_id = view.getAppId(),
     })) |handle| {
         view.ext_foreign_toplevel_handle = handle;
+        handle.data = view;
     } else |_| {
         log.err("failed to create ext foreign toplevel handle", .{});
     }

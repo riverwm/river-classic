@@ -179,6 +179,12 @@ pub fn handleMap(listener: *wl.Listener(void)) void {
         return;
     };
 
+    _ = view.image_capture_scene.tree.createSceneSurface(surface) catch {
+        log.err("out of memory", .{});
+        surface.resource.getClient().postNoMemory();
+        return;
+    };
+
     view.pending.box = .{
         .x = 0,
         .y = 0,

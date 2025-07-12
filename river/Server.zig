@@ -46,6 +46,7 @@ const XdgDecoration = @import("XdgDecoration.zig");
 const XdgToplevel = @import("XdgToplevel.zig");
 const XwaylandOverrideRedirect = @import("XwaylandOverrideRedirect.zig");
 const XwaylandView = @import("XwaylandView.zig");
+const View = @import("View.zig");
 
 const log = std.log.scoped(.server);
 
@@ -93,6 +94,7 @@ screencopy_manager: *wlr.ScreencopyManagerV1,
 
 image_copy_capture_manager: *wlr.ExtImageCopyCaptureManagerV1,
 output_image_capture_source_manager: *wlr.ExtOutputImageCaptureSourceManagerV1,
+foreign_toplevel_image_capture_source_manager: *wlr.ExtForeignToplevelImageCaptureSourceManagerV1,
 
 foreign_toplevel_manager: *wlr.ForeignToplevelManagerV1,
 
@@ -127,6 +129,8 @@ request_activate: wl.Listener(*wlr.XdgActivationV1.event.RequestActivate) =
     wl.Listener(*wlr.XdgActivationV1.event.RequestActivate).init(handleRequestActivate),
 request_set_cursor_shape: wl.Listener(*wlr.CursorShapeManagerV1.event.RequestSetShape) =
     wl.Listener(*wlr.CursorShapeManagerV1.event.RequestSetShape).init(handleRequestSetCursorShape),
+new_foreign_toplevel_capture_request: wl.Listener(*wlr.ExtForeignToplevelImageCaptureSourceManagerV1.Request) =
+    wl.Listener(*wlr.ExtForeignToplevelImageCaptureSourceManagerV1.Request).init(handleNewForeignToplevelCaptureRequest),
 
 pub fn init(server: *Server, runtime_xwayland: bool) !void {
     // We intentionally don't try to prevent memory leaks on error in this function
@@ -181,6 +185,7 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
 
         .image_copy_capture_manager = try wlr.ExtImageCopyCaptureManagerV1.create(wl_server, 1),
         .output_image_capture_source_manager = try wlr.ExtOutputImageCaptureSourceManagerV1.create(wl_server, 1),
+        .foreign_toplevel_image_capture_source_manager = try wlr.ExtForeignToplevelImageCaptureSourceManagerV1.create(wl_server, 1),
 
         .foreign_toplevel_manager = try wlr.ForeignToplevelManagerV1.create(wl_server),
 
@@ -392,6 +397,7 @@ fn blocklist(server: *Server, global: *const wl.Global) bool {
         global == server.screencopy_manager.global or
         global == server.image_copy_capture_manager.global or
         global == server.output_image_capture_source_manager.global or
+        global == server.foreign_toplevel_image_capture_source_manager.global or
         global == server.export_dmabuf_manager.global or
         global == server.data_control_manager.global or
         global == server.layout_manager.global or
@@ -595,5 +601,26 @@ fn handleRequestSetCursorShape(
             const name = wlr.CursorShapeManagerV1.shapeName(event.shape);
             seat.cursor.setImage(.{ .xcursor = name });
         }
+    }
+}
+
+fn handleNewForeignToplevelCaptureRequest(
+    listener: *wl.Listener(*wlr.ExtForeignToplevelImageCaptureSourceManagerV1.Request),
+    request: *wlr.ExtForeignToplevelImageCaptureSourceManagerV1.Request,
+) void {
+    const server: *Server = @fieldParentPtr("new_foreign_toplevel_capture_request", listener);
+    if (request.toplevel_handle.data) |opaque_view| {
+        const view: *View = @ptrCast(@alignCast(opaque_view));
+        const capture_source = view.image_capture_source orelse wlr.ExtImageCaptureSourceV1.createWithSceneNode(
+            &view.image_capture_scene.tree.node,
+            server.wl_server.getEventLoop(),
+            server.allocator,
+            server.renderer,
+        ) catch {
+            log.err("failed to create ext image capture source", .{});
+            return;
+        };
+
+        _ = request.accept(capture_source);
     }
 }
