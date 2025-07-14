@@ -283,7 +283,12 @@ fn handleUnmap(listener: *wl.Listener(void)) void {
 fn handleNewPopup(listener: *wl.Listener(*wlr.XdgPopup), wlr_xdg_popup: *wlr.XdgPopup) void {
     const toplevel: *XdgToplevel = @fieldParentPtr("new_popup", listener);
 
-    XdgPopup.create(wlr_xdg_popup, toplevel.view.popup_tree, toplevel.view.popup_tree) catch {
+    XdgPopup.create(
+        wlr_xdg_popup,
+        toplevel.view.popup_tree,
+        toplevel.view.popup_tree,
+        &toplevel.view.image_capture_scene.tree,
+    ) catch {
         wlr_xdg_popup.resource.postNoMemory();
         return;
     };

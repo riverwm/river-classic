@@ -34,6 +34,8 @@ root: *wlr.SceneTree,
 
 tree: *wlr.SceneTree,
 
+image_capture_tree: ?*wlr.SceneTree,
+
 destroy: wl.Listener(void) = wl.Listener(void).init(handleDestroy),
 commit: wl.Listener(*wlr.Surface) = wl.Listener(*wlr.Surface).init(handleCommit),
 new_popup: wl.Listener(*wlr.XdgPopup) = wl.Listener(*wlr.XdgPopup).init(handleNewPopup),
@@ -44,14 +46,21 @@ pub fn create(
     wlr_xdg_popup: *wlr.XdgPopup,
     root: *wlr.SceneTree,
     parent: *wlr.SceneTree,
+    image_capture_parent: ?*wlr.SceneTree,
 ) error{OutOfMemory}!void {
     const xdg_popup = try util.gpa.create(XdgPopup);
     errdefer util.gpa.destroy(xdg_popup);
+
+    const image_capture_tree = if (image_capture_parent) |p|
+        try p.createSceneXdgSurface(wlr_xdg_popup.base)
+    else
+        null;
 
     xdg_popup.* = .{
         .wlr_xdg_popup = wlr_xdg_popup,
         .root = root,
         .tree = try parent.createSceneXdgSurface(wlr_xdg_popup.base),
+        .image_capture_tree = image_capture_tree,
     };
 
     wlr_xdg_popup.events.destroy.add(&xdg_popup.destroy);
@@ -86,6 +95,7 @@ fn handleNewPopup(listener: *wl.Listener(*wlr.XdgPopup), wlr_xdg_popup: *wlr.Xdg
         wlr_xdg_popup,
         xdg_popup.root,
         xdg_popup.tree,
+        xdg_popup.image_capture_tree,
     ) catch {
         wlr_xdg_popup.resource.postNoMemory();
         return;
