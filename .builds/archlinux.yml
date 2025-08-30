@@ -20,7 +20,7 @@ packages:
   - wget
   - xz
 sources:
-  - https://codeberg.org/river/river
+  - https://codeberg.org/river/river-classic
   - https://gitlab.freedesktop.org/wlroots/wlroots.git
 tasks:
   - install_deps: |
@@ -39,13 +39,13 @@ tasks:
       sudo mv zig-x86_64-linux-0.15.1/zig /usr/bin/
       sudo mv zig-x86_64-linux-0.15.1/lib /usr/lib/zig
   - build: |
-      cd river
+      cd river-classic
       zig build --summary all
   - build_xwayland: |
-      cd river
+      cd river-classic
       zig build --summary all -Dxwayland
   - fmt: |
-      cd river
+      cd river-classic
       zig fmt --check river/
       zig fmt --check riverctl/
       zig fmt --check rivertile/
