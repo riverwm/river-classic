@@ -1,9 +1,11 @@
 # river-classic
 
 river-classic is a dynamic tiling Wayland compositor with flexible runtime
-configuration. It is a fork of [river](https://codeberg.org/river/river) 0.3
-intended for users that are happy with how river 0.3 works and do not wish to
-deal with the majorly breaking changes planned for the river 0.4.0 release.
+configuration.
+
+It is a fork of [river](https://codeberg.org/river/river) 0.3 intended for users
+that are happy with how river 0.3 works and do not wish to deal with the majorly
+breaking changes planned for the river 0.4.0 release.
 
 Join us at [#river](https://web.libera.chat/?channels=#river) on irc.libera.chat —
 Read our man pages, [wiki](https://codeberg.org/river/wiki), and
