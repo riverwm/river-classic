@@ -1,5 +1,5 @@
 .{
-    .name = .river,
+    .name = .river_classic,
     // While a river release is in development, this string should contain
     // the version in development with the "-dev" suffix.
     // When a release is tagged, the "-dev" suffix should be removed for the
@@ -25,5 +25,5 @@
             .hash = "xkbcommon-0.3.0-VDqIe3K9AQB2fG5ZeRcMC9i7kfrp5m2rWgLrmdNn9azr",
         },
     },
-    .fingerprint = 0xf5e3672b8e8d6efc,
+    .fingerprint = 0x3dae7aba2ea52a3b,
 }
