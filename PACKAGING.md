@@ -1,39 +1,39 @@
-# Packaging river for distribution
+# Packaging river-classic for distribution
 
-First of all, I apologize for writing river in Zig. It will likely make
+First of all, I apologize for writing river-classic in Zig. It will likely make
 your job harder until Zig is more mature/stable. I do however believe that
-writing my software in Zig allows me to deliver the best quality I can
-despite the drawbacks of depending on a relatively immature language/toolchain.
+writing my software in Zig allows me to deliver the best quality I can despite
+the drawbacks of depending on a relatively immature language/toolchain.
 
 ## Source tarballs
 
-Source tarballs with stable checksums and git submodule sources included may
-be found on the [codeberg releases page](https://codeberg.org/river/river/releases).
+Source tarballs with stable checksums may be found on the
+[codeberg releases page](https://codeberg.org/river/river-classic/releases).
 These tarballs are signed with the PGP key available on my website at
 <https://isaacfreund.com/public_key.txt>.
 
-For the 0.1.3 release for example, the tarball and signature URLs are:
+For the 0.3.12 release for example, the tarball and signature URLs are:
 ```
-https://codeberg.org/river/river/releases/download/v0.1.3/river-0.1.3.tar.gz
-https://codeberg.org/river/river/releases/download/v0.1.3/river-0.1.3.tar.gz.sig
+https://codeberg.org/river/river-classic/releases/download/v0.1.3/river-classic-0.3.12.tar.gz
+https://codeberg.org/river/river-classic/releases/download/v0.1.3/river-classic-0.3.12.tar.gz.sig
 ```
 
 ## Zig version
 
 Until Zig 1.0, Zig releases will often have breaking changes that prevent
-river from building. River tracks the latest minor version Zig release
-and is only compatible with that release and any patch releases. At the time
-of writing for example river is compatible with Zig 0.9.0 and 0.9.1 but
-not Zig 0.8.0 or 0.10.0.
+river-classic from building. river-classic tracks the latest minor version Zig
+release and is only compatible with that release and any patch releases. At the
+time of writing for example river is compatible with Zig 0.9.0 and 0.9.1 but not
+Zig 0.8.0 or 0.10.0.
 
 ## Zig Package Manager
 
-River uses the built-in Zig package manager for its (few) Zig dependencies.
-By default, running `zig build` will fetch river's Zig dependencies from the
-internet and store them in the global zig cache before building river. Since
-accessing the internet is forbidden or at least frowned upon by most distro
-packaging infrastructure, there are ways to fetch the Zig dependencies in a
-separate step before building river:
+river-classic uses the built-in Zig package manager for its (few) Zig
+dependencies.  By default, running `zig build` will fetch river-classic's Zig
+dependencies from the internet and store them in the global zig cache before
+building river-classic. Since accessing the internet is forbidden or at least
+frowned upon by most distro packaging infrastructure, there are ways to fetch
+the Zig dependencies in a separate step before building river-classic:
 
 1. Fetch step with internet access:
 
@@ -114,10 +114,10 @@ in the first place. For greatest effect, both may be used.
   - `-Doptimize=ReleaseSmall`: Optimize for binary size,
   disable all assertions and runtime safety checks.
 
-Please use `-Doptimize=ReleaseSafe` when building river for general
-use. CPU execution speed is not the performance bottleneck for river, the
-GPU is. Additionally, the increased safety is more than worth the binary
-size trade-off in my opinion.
+Please use `-Doptimize=ReleaseSafe` when building river-classic for general use.
+CPU execution speed is not the performance bottleneck for river-classic, the GPU
+is. Additionally, the increased safety is more than worth the binary size
+trade-off in my opinion.
 
 ## Build prefix and DESTDIR
 
@@ -126,7 +126,7 @@ environment variable. For example
 ```bash
 DESTDIR="/foo/bar" zig build --prefix /usr install
 ```
-will install river to `/foo/bar/usr/bin/river`.
+will install river-classic to `/foo/bar/usr/bin/river`.
 
 The Zig build system only has a single install step, there is no way to build
 artifacts for a given prefix and then install those artifacts to that prefix
@@ -147,7 +147,7 @@ install() {
 ## River specific suggestions
 
 I recommend installing the example init file found at `example/init` to
-`/usr/share/examples/river/init` or similar if your distribution has such
+`/usr/share/examples/river-classic/init` or similar if your distribution has such
 a convention.
 
 ## Examples
