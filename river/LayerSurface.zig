@@ -36,6 +36,8 @@ wlr_layer_surface: *wlr.LayerSurfaceV1,
 scene_layer_surface: *wlr.SceneLayerSurfaceV1,
 popup_tree: *wlr.SceneTree,
 
+newly_mapped: bool = false,
+
 destroy: wl.Listener(*wlr.LayerSurfaceV1) = wl.Listener(*wlr.LayerSurfaceV1).init(handleDestroy),
 map: wl.Listener(void) = wl.Listener(void).init(handleMap),
 unmap: wl.Listener(void) = wl.Listener(void).init(handleUnmap),
@@ -96,19 +98,19 @@ fn handleDestroy(listener: *wl.Listener(*wlr.LayerSurfaceV1), _: *wlr.LayerSurfa
 
 fn handleMap(listener: *wl.Listener(void)) void {
     const layer_surface: *LayerSurface = @fieldParentPtr("map", listener);
-    const wlr_surface = layer_surface.wlr_layer_surface;
+    const wlr_layer_surface = layer_surface.wlr_layer_surface;
 
-    log.debug("layer surface '{s}' mapped", .{wlr_surface.namespace});
+    log.debug("layer surface '{s}' mapped", .{wlr_layer_surface.namespace});
 
-    layer_surface.output.arrangeLayers();
+    // This is a bit of a hack, but layer surfaces are not part of the
+    // transaction system in river 0.3 so there's not a significantly cleaner
+    // way I see to do this.
+    layer_surface.newly_mapped = true;
 
-    const consider = wlr_surface.current.keyboard_interactive == .on_demand and
-        (wlr_surface.current.layer == .top or wlr_surface.current.layer == .overlay);
-    handleKeyboardInteractiveExclusive(
-        layer_surface.output,
-        if (consider) layer_surface else null,
-    );
-
+    // Beware: it is possible for arrangeLayers() to destroy this LayerSurface!
+    const output = layer_surface.output;
+    output.arrangeLayers();
+    handleKeyboardInteractiveExclusive(output);
     server.root.applyPending();
 }
 
@@ -117,8 +119,10 @@ fn handleUnmap(listener: *wl.Listener(void)) void {
 
     log.debug("layer surface '{s}' unmapped", .{layer_surface.wlr_layer_surface.namespace});
 
-    layer_surface.output.arrangeLayers();
-    handleKeyboardInteractiveExclusive(layer_surface.output, null);
+    // Beware: it is possible for arrangeLayers() to destroy this LayerSurface!
+    const output = layer_surface.output;
+    output.arrangeLayers();
+    handleKeyboardInteractiveExclusive(output);
     server.root.applyPending();
 }
 
@@ -137,37 +141,61 @@ fn handleCommit(listener: *wl.Listener(*wlr.Surface), _: *wlr.Surface) void {
     if (wlr_layer_surface.initial_commit or
         @as(u32, @bitCast(wlr_layer_surface.current.committed)) != 0)
     {
-        layer_surface.output.arrangeLayers();
-        handleKeyboardInteractiveExclusive(layer_surface.output, null);
+        // Beware: it is possible for arrangeLayers() to destroy this LayerSurface!
+        const output = layer_surface.output;
+        output.arrangeLayers();
+        handleKeyboardInteractiveExclusive(output);
         server.root.applyPending();
     }
+
+    layer_surface.newly_mapped = false;
 }
 
-/// Focus topmost keyboard-interactivity-exclusive layer surface above normal
-/// content, or if none found, focus the surface given as `consider`.
-/// Requires a call to Root.applyPending()
-fn handleKeyboardInteractiveExclusive(output: *Output, consider: ?*LayerSurface) void {
+fn handleKeyboardInteractiveExclusive(output: *Output) void {
     if (server.lock_manager.state != .unlocked) return;
 
     // Find the topmost layer surface (if any) in the top or overlay layers which
     // requests exclusive keyboard interactivity.
-    const to_focus = outer: for ([_]zwlr.LayerShellV1.Layer{ .overlay, .top }) |layer| {
-        const tree = output.layerSurfaceTree(layer);
-        // Iterate in reverse to match rendering order.
-        var it = tree.children.iterator(.reverse);
-        while (it.next()) |node| {
-            assert(node.type == .tree);
-            if (@as(?*SceneNodeData, @ptrCast(@alignCast(node.data)))) |node_data| {
-                const layer_surface = node_data.data.layer_surface;
-                const wlr_layer_surface = layer_surface.wlr_layer_surface;
-                if (wlr_layer_surface.surface.mapped and
-                    wlr_layer_surface.current.keyboard_interactive == .exclusive)
-                {
-                    break :outer layer_surface;
+    // If none is found, check for a newly mapped surface in the same layers with
+    // on demand keyboard interactivity.
+    const to_focus = blk: {
+        for ([_]zwlr.LayerShellV1.Layer{ .overlay, .top }) |layer| {
+            const tree = output.layerSurfaceTree(layer);
+            // Iterate in reverse to match rendering order.
+            var it = tree.children.iterator(.reverse);
+            while (it.next()) |node| {
+                assert(node.type == .tree);
+                if (@as(?*SceneNodeData, @ptrCast(@alignCast(node.data)))) |node_data| {
+                    const layer_surface = node_data.data.layer_surface;
+                    const wlr_layer_surface = layer_surface.wlr_layer_surface;
+                    if (wlr_layer_surface.surface.mapped and
+                        wlr_layer_surface.current.keyboard_interactive == .exclusive)
+                    {
+                        break :blk layer_surface;
+                    }
                 }
             }
         }
-    } else consider;
+        for ([_]zwlr.LayerShellV1.Layer{ .overlay, .top }) |layer| {
+            const tree = output.layerSurfaceTree(layer);
+            // Iterate in reverse to match rendering order.
+            var it = tree.children.iterator(.reverse);
+            while (it.next()) |node| {
+                assert(node.type == .tree);
+                if (@as(?*SceneNodeData, @ptrCast(@alignCast(node.data)))) |node_data| {
+                    const layer_surface = node_data.data.layer_surface;
+                    const wlr_layer_surface = layer_surface.wlr_layer_surface;
+                    if (layer_surface.newly_mapped and
+                        wlr_layer_surface.surface.mapped and
+                        wlr_layer_surface.current.keyboard_interactive == .on_demand)
+                    {
+                        break :blk layer_surface;
+                    }
+                }
+            }
+        }
+        break :blk null;
+    };
 
     if (to_focus) |s| {
         assert(s.wlr_layer_surface.current.keyboard_interactive != .none);
