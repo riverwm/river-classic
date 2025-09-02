@@ -188,8 +188,11 @@ pub fn logFn(
 
     const scope_prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
 
-    var stderr = fs.File.stderr().writer(&.{});
-    stderr.interface.print(level.asText() ++ scope_prefix ++ format ++ "\n", args) catch {};
+    var buffer: [256]u8 = undefined;
+    const stderr = std.debug.lockStderrWriter(&buffer);
+    defer std.debug.unlockStderrWriter();
+
+    stderr.print(level.asText() ++ scope_prefix ++ format ++ "\n", args) catch {};
 }
 
 /// See wlroots_log_wrapper.c
