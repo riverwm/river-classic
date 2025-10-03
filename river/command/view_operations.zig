@@ -78,6 +78,7 @@ fn getTarget(seat: *Seat, direction_str: []const u8, target_mode: TargetMode) !?
     if (seat.focused.view.pending.fullscreen) return null;
     if (target_mode == .skip_float and seat.focused.view.pending.float) return null;
     const output = seat.focused_output orelse return null;
+    if (seat.focused.view.pending.output != output) return null;
 
     // Logical direction, based on the view stack.
     if (std.meta.stringToEnum(Direction, direction_str)) |direction| {
