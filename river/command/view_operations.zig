@@ -79,12 +79,6 @@ fn getTarget(seat: *Seat, direction_str: []const u8, target_mode: TargetMode) !?
     if (target_mode == .skip_float and seat.focused.view.pending.float) return null;
     const output = seat.focused_output orelse return null;
 
-    // If no currently view is focused, focus the first in the stack.
-    if (seat.focused != .view) {
-        var it = output.pending.wm_stack.iterator(.forward);
-        return it.next();
-    }
-
     // Logical direction, based on the view stack.
     if (std.meta.stringToEnum(Direction, direction_str)) |direction| {
         switch (direction) {
