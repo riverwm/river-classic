@@ -37,7 +37,7 @@ Tags are used to organize windows rather than workspaces. A window may be
 assigned to one or more tags. Likewise, one or more tags may be displayed on a
 monitor at a time.
 
-River is configured at runtime using the `riverctl` tool. It can define
+river-classic is configured at runtime using the `riverctl` tool. It can define
 keybindings, set the active layout generator, configure input devices, and more.
 On startup, river-classic runs a user-defined init script which usually runs
 `riverctl` commands to set up the user's configuration.
