@@ -8,7 +8,7 @@ that are happy with how river 0.3 works and do not wish to deal with the majorly
 breaking changes planned for the river 0.4.0 release.
 
 Join us at [#river](https://web.libera.chat/?channels=#river) on irc.libera.chat —
-Read our man pages, [wiki](https://codeberg.org/river/wiki), and
+Read our man pages, [wiki](https://codeberg.org/river/wiki-classic), and
 [Code of Conduct](CODE_OF_CONDUCT.md)
 
 The main repository is on [codeberg](https://codeberg.org/river/river-classic),
