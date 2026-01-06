@@ -57,6 +57,7 @@ session: ?*wlr.Session,
 
 renderer: *wlr.Renderer,
 allocator: *wlr.Allocator,
+gpu_reset_recover: ?*wl.EventSource = null,
 
 security_context_manager: *wlr.SecurityContextManagerV1,
 
@@ -373,19 +374,40 @@ fn terminate(_: c_int, wl_server: *wl.Server) c_int {
 
 fn handleRendererLost(listener: *wl.Listener(void)) void {
     const server: *Server = @fieldParentPtr("renderer_lost", listener);
+    if (server.gpu_reset_recover != null) {
+        log.info("ignoring GPU reset event, recovery already scheduled", .{});
+        return;
+    }
+    log.info("received GPU reset event, scheduling recovery", .{});
+    // There's a design wart in this wlroots API: calling wlr_renderer_destroy()
+    // from inside this listener for the renderer lost event causes the assertion
+    // that all listener lists are empty in wlr_renderer_destroy() to fail. This
+    // happens even if river has already called server.renderer_lost.link.remove()
+    // since wlroots uses wl_signal_emit_mutable(), which is implemented by adding
+    // temporary links to the list during iteration.
+    // Using an idle callback is the most straightforward way to work around this
+    // design wart.
+    const event_loop = server.wl_server.getEventLoop();
+    server.gpu_reset_recover = event_loop.addIdle(*Server, gpuResetRecoverIdle, server) catch |err| switch (err) {
+        error.OutOfMemory => {
+            log.err("out of memory", .{});
+            return;
+        },
+    };
+}
 
-    log.info("recovering from GPU reset", .{});
-
+fn gpuResetRecoverIdle(server: *Server) void {
+    server.gpu_reset_recover = null;
     // There's not much that can be done if creating a new renderer or allocator fails.
     // With luck there might be another GPU reset after which we try again and succeed.
-
-    server.recoverFromGpuReset() catch |err| switch (err) {
+    server.gpuResetRecover() catch |err| switch (err) {
         error.RendererCreateFailed => log.err("failed to create new renderer after GPU reset", .{}),
         error.AllocatorCreateFailed => log.err("failed to create new allocator after GPU reset", .{}),
     };
 }
 
-fn recoverFromGpuReset(server: *Server) !void {
+fn gpuResetRecover(server: *Server) !void {
+    log.info("recovering from GPU reset", .{});
     const new_renderer = try wlr.Renderer.autocreate(server.backend);
     errdefer new_renderer.destroy();
 
