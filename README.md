@@ -26,12 +26,12 @@ layout and shifted around as windows are opened/closed.
 
 Rather than having the tiled layout logic built into the compositor process,
 river-classic uses a [custom Wayland
-protocol](https://codeberg.org/river/river-classic/src/branch/master/protocol/river-layout-v3.xml)
+protocol](https://codeberg.org/river/river-classic/src/branch/main/protocol/river-layout-v3.xml)
 and separate "layout generator" process. A basic layout generator, `rivertile`,
 is provided but users are encouraged to use community-developed [layout
-generators](https://codeberg.org/river/wiki/src/branch/master/pages/Community-Layouts.md)
+generators](https://codeberg.org/river/wiki-classic/src/branch/main/pages/Community-Layouts.md)
 or write their own. Examples in C and Python may be found
-[here](https://codeberg.org/river/river-classic/src/branch/master/contrib).
+[here](https://codeberg.org/river/river-classic/src/branch/main/contrib).
 
 Tags are used to organize windows rather than workspaces. A window may be
 assigned to one or more tags. Likewise, one or more tags may be displayed on a
