@@ -28,6 +28,7 @@ const wp = @import("wayland").server.wp;
 const server = &@import("main.zig").server;
 const util = @import("util.zig");
 
+const Config = @import("Config.zig");
 const ForeignToplevelHandle = @import("ForeignToplevelHandle.zig");
 const Output = @import("Output.zig");
 const SceneNodeData = @import("SceneNodeData.zig");
@@ -529,12 +530,12 @@ fn saveSurfaceTreeIter(
     saved.setTransform(buffer.transform);
 }
 
-pub fn setPendingOutput(view: *View, output: *Output) void {
+pub fn setPendingOutput(view: *View, output: *Output, attach_mode: Config.AttachMode) void {
     view.pending.output = output;
     view.pending_wm_stack_link.remove();
     view.pending_focus_stack_link.remove();
 
-    switch (output.attachMode()) {
+    switch (attach_mode) {
         .top => output.pending.wm_stack.prepend(view),
         .bottom => output.pending.wm_stack.append(view),
         .after => |n| view.attachAfter(&output.pending, n),
@@ -709,7 +710,7 @@ pub fn map(view: *View) !void {
     };
 
     if (output) |o| {
-        view.setPendingOutput(o);
+        view.setPendingOutput(o, o.attachMode());
 
         var it = server.input_manager.seats.iterator(.forward);
         while (it.next()) |seat| seat.focus(view);

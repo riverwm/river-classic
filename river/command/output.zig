@@ -78,7 +78,7 @@ pub fn sendToOutput(
             seat.focused.view.pending.tags = destination_output.pending.tags;
         }
 
-        seat.focused.view.setPendingOutput(destination_output);
+        seat.focused.view.setPendingOutput(destination_output, destination_output.attachMode());
 
         // When explicitly sending a view to an output, the user likely
         // does not expect a previously evacuated view moved back to a

@@ -311,7 +311,7 @@ pub fn deactivateOutput(root: *Root, output: *Output) void {
     };
     if (fallback_output) |fallback| {
         var it = output.pending.focus_stack.safeIterator(.reverse);
-        while (it.next()) |view| view.setPendingOutput(fallback);
+        while (it.next()) |view| view.setPendingOutput(fallback, fallback.attachMode());
     } else {
         var it = output.pending.focus_stack.iterator(.forward);
         while (it.next()) |view| view.pending.output = null;
@@ -390,7 +390,7 @@ pub fn activateOutput(root: *Root, output: *Output) void {
         output.pending.tags = root.fallback_pending.tags;
         {
             var it = root.fallback_pending.wm_stack.safeIterator(.reverse);
-            while (it.next()) |view| view.setPendingOutput(output);
+            while (it.next()) |view| view.setPendingOutput(output, .top);
         }
         {
             // Focus the new output with all seats
@@ -407,7 +407,7 @@ pub fn activateOutput(root: *Root, output: *Output) void {
             const name = view.output_before_evac orelse continue;
             if (mem.eql(u8, name, mem.span(output.wlr_output.name))) {
                 if (view.pending.output != output) {
-                    view.setPendingOutput(output);
+                    view.setPendingOutput(output, output.attachMode());
                 }
                 util.gpa.free(name);
                 view.output_before_evac = null;
