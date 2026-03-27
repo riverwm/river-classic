@@ -98,6 +98,7 @@ pub fn build(b: *Build) !void {
     scanner.addCustomProtocol(b.path("protocol/river-layout-v3.xml"));
     scanner.addCustomProtocol(b.path("protocol/wlr-layer-shell-unstable-v1.xml"));
     scanner.addCustomProtocol(b.path("protocol/wlr-output-power-management-unstable-v1.xml"));
+    scanner.addCustomProtocol(b.path("protocol/virtual-keyboard-unstable-v1.xml"));
 
     // Some of these versions may be out of date with what wlroots implements.
     // This is not a problem in practice though as long as river successfully compiles.
@@ -126,6 +127,7 @@ pub fn build(b: *Build) !void {
 
     scanner.generate("zwlr_layer_shell_v1", 4);
     scanner.generate("zwlr_output_power_manager_v1", 1);
+    scanner.generate("zwp_virtual_keyboard_manager_v1", 1);
 
     const wayland = b.createModule(.{ .root_source_file = scanner.result });
 
@@ -141,7 +143,7 @@ pub fn build(b: *Build) !void {
     // exposed to the wlroots module for @cImport() to work. This seems to be
     // the best way to do so with the current std.Build API.
     wlroots.resolved_target = target;
-    wlroots.linkSystemLibrary("wlroots-0.19", .{});
+    wlroots.linkSystemLibrary("wlroots-0.20", .{});
 
     const flags = b.createModule(.{ .root_source_file = b.path("common/flags.zig") });
     const globber = b.createModule(.{ .root_source_file = b.path("common/globber.zig") });
@@ -162,7 +164,7 @@ pub fn build(b: *Build) !void {
         river.linkSystemLibrary("libevdev");
         river.linkSystemLibrary("libinput");
         river.linkSystemLibrary("wayland-server");
-        river.linkSystemLibrary("wlroots-0.19");
+        river.linkSystemLibrary("wlroots-0.20");
         river.linkSystemLibrary("xkbcommon");
         river.linkSystemLibrary("pixman-1");
 
