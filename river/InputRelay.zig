@@ -47,14 +47,11 @@ input_popups: wl.list.Head(InputPopup, .link),
 text_input: ?*TextInput = null,
 
 input_method_commit: wl.Listener(void) = .init(handleInputMethodCommit),
-grab_keyboard: wl.Listener(*wlr.InputMethodV2.KeyboardGrab) =
-    wl.Listener(*wlr.InputMethodV2.KeyboardGrab).init(handleInputMethodGrabKeyboard),
+grab_keyboard: wl.Listener(*wlr.InputMethodV2.KeyboardGrab) = .init(handleInputMethodGrabKeyboard),
 input_method_destroy: wl.Listener(void) = .init(handleInputMethodDestroy),
-input_method_new_popup: wl.Listener(*wlr.InputPopupSurfaceV2) =
-    wl.Listener(*wlr.InputPopupSurfaceV2).init(handleInputMethodNewPopup),
+input_method_new_popup: wl.Listener(*wlr.InputPopupSurfaceV2) = .init(handleInputMethodNewPopup),
 
-grab_keyboard_destroy: wl.Listener(*wlr.InputMethodV2.KeyboardGrab) =
-    wl.Listener(*wlr.InputMethodV2.KeyboardGrab).init(handleInputMethodGrabKeyboardDestroy),
+grab_keyboard_destroy: wl.Listener(void) = .init(handleInputMethodGrabKeyboardDestroy),
 
 pub fn init(relay: *InputRelay) void {
     relay.* = .{ .text_inputs = undefined, .input_popups = undefined };
@@ -157,15 +154,15 @@ fn handleInputMethodNewPopup(
     };
 }
 
-fn handleInputMethodGrabKeyboardDestroy(
-    listener: *wl.Listener(*wlr.InputMethodV2.KeyboardGrab),
-    keyboard_grab: *wlr.InputMethodV2.KeyboardGrab,
-) void {
+fn handleInputMethodGrabKeyboardDestroy(listener: *wl.Listener(void)) void {
     const relay: *InputRelay = @fieldParentPtr("grab_keyboard_destroy", listener);
+    const input_method = relay.input_method.?;
+    const keyboard_grab = input_method.keyboard_grab.?;
+
     relay.grab_keyboard_destroy.link.remove();
 
     if (keyboard_grab.keyboard) |keyboard| {
-        keyboard_grab.input_method.seat.keyboardNotifyModifiers(&keyboard.modifiers);
+        input_method.seat.keyboardNotifyModifiers(&keyboard.modifiers);
     }
 }
 
