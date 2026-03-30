@@ -252,6 +252,7 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
     server.layer_shell.events.new_surface.add(&server.new_layer_surface);
     server.xdg_activation.events.request_activate.add(&server.request_activate);
     server.cursor_shape_manager.events.request_set_shape.add(&server.request_set_cursor_shape);
+    server.foreign_toplevel_image_capture_source_manager.events.new_request.add(&server.new_foreign_toplevel_capture_request);
 
     wl_server.setGlobalFilter(*Server, globalFilter, server);
 }
@@ -267,6 +268,7 @@ pub fn deinit(server: *Server) void {
     server.new_layer_surface.link.remove();
     server.request_activate.link.remove();
     server.request_set_cursor_shape.link.remove();
+    server.new_foreign_toplevel_capture_request.link.remove();
 
     if (build_options.xwayland) {
         if (server.xwayland) |xwayland| {
