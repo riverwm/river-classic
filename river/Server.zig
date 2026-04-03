@@ -623,6 +623,8 @@ fn handleNewForeignToplevelCaptureRequest(
             return;
         };
 
+        view.image_capture_source = capture_source;
+
         _ = request.accept(capture_source);
     }
 }
