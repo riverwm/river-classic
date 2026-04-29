@@ -314,6 +314,9 @@ fn handleCommit(listener: *wl.Listener(*wlr.Surface), _: *wlr.Surface) void {
     const toplevel: *XdgToplevel = @fieldParentPtr("commit", listener);
     const view = toplevel.view;
 
+    // NB: the subsurface tree is never empty here
+    view.image_capture_scene.tree.node.subsurfaceTreeSetClip(&toplevel.wlr_toplevel.base.geometry);
+
     if (toplevel.wlr_toplevel.base.initial_commit) {
         _ = toplevel.wlr_toplevel.setWmCapabilities(.{ .fullscreen = true });
 
