@@ -24,7 +24,7 @@ const wl = @import("wayland").server.wl;
 
 const globber = @import("globber");
 
-const c = @import("c.zig").c;
+const c = @import("c");
 const server = &@import("main.zig").server;
 const util = @import("util.zig");
 

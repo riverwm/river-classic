@@ -24,6 +24,10 @@
             .url = "https://codeberg.org/ifreund/zig-xkbcommon/archive/v0.3.0.tar.gz",
             .hash = "xkbcommon-0.3.0-VDqIe3K9AQB2fG5ZeRcMC9i7kfrp5m2rWgLrmdNn9azr",
         },
+        .translate_c = .{
+            .url = "git+https://codeberg.org/ziglang/translate-c/#7a1a9fdc4ab00835748a6657ecbb835e3d5d45f7",
+            .hash = "translate_c-0.0.0-Q_BUWvP1BgCjAk6PWv5286tOlvzD9-X-NkuTzh0KxY0Q",
+        },
     },
     .fingerprint = 0x3dae7aba2ea52a3b,
 }

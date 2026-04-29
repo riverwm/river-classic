@@ -26,7 +26,7 @@ const wayland = @import("wayland");
 const wl = wayland.server.wl;
 const zwlr = wayland.server.zwlr;
 
-const c = @import("c.zig").c;
+const c = @import("c");
 const server = &@import("main.zig").server;
 const util = @import("util.zig");
 
