@@ -13,12 +13,12 @@
             .hash = "pixman-0.3.0-LClMnz2VAAAs7QSCGwLimV5VUYx0JFnX5xWU6HwtMuDX",
         },
         .wayland = .{
-            .url = "https://codeberg.org/ifreund/zig-wayland/archive/v0.4.0.tar.gz",
-            .hash = "wayland-0.4.0-lQa1khbMAQAsLS2eBR7M5lofyEGPIbu2iFDmoz8lPC27",
+            .url = "https://codeberg.org/ifreund/zig-wayland/archive/v0.6.0.tar.gz",
+            .hash = "wayland-0.6.0-lQa1kqz8AQADQmdNJsNhLoNHcnEGEUjrOaPV-dtEnEmX",
         },
         .wlroots = .{
-            .url = "https://codeberg.org/ifreund/zig-wlroots/archive/v0.20.0.tar.gz",
-            .hash = "wlroots-0.20.0-jmOlcmtCBADS6eoJ6mkeiSNZkibrhD-c5Qwn-LiM86r1",
+            .url = "https://codeberg.org/ifreund/zig-wlroots/archive/v0.20.1.tar.gz",
+            .hash = "wlroots-0.20.1-jmOlcqNVBAB3uB5oqBTzpRlwu-FmMyyZMVAWCe5kmcSt",
         },
         .xkbcommon = .{
             .url = "https://codeberg.org/ifreund/zig-xkbcommon/archive/v0.3.0.tar.gz",

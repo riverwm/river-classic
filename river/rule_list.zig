@@ -45,7 +45,7 @@ pub fn RuleList(comptime T: type) type {
 
         /// Ordered from most specific to most general.
         /// Ordered first by app-id generality then by title generality.
-        rules: std.ArrayListUnmanaged(Rule) = .{},
+        rules: std.ArrayList(Rule) = .empty,
 
         pub fn deinit(list: *List) void {
             for (list.rules.items) |rule| {

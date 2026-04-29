@@ -31,7 +31,7 @@ pub fn keyboardLayout(
     args: []const [:0]const u8,
     _: *?[]const u8,
 ) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "rules", .kind = .arg },
         .{ .name = "model", .kind = .arg },
         .{ .name = "variant", .kind = .arg },
@@ -69,13 +69,15 @@ pub fn keyboardLayoutFile(
     if (args.len < 2) return Error.NotEnoughArguments;
     if (args.len > 2) return Error.TooManyArguments;
 
-    const file = std.fs.cwd().openFile(args[1], .{}) catch return error.CannotReadFile;
-    defer file.close();
+    const io = std.Io.Threaded.global_single_threaded.io();
+    const file = std.Io.Dir.cwd().openFile(io, args[1], .{}) catch return error.CannotReadFile;
+    defer file.close(io);
+    var reader = file.reader(io, &.{});
 
     // 1 GiB is arbitrarily chosen as an exceedingly large but not infinite upper bound.
-    const file_bytes = file.readToEndAlloc(util.gpa, 1024 * 1024 * 1024) catch |err| {
+    const file_bytes = reader.interface.allocRemaining(util.gpa, .limited(1024 * 1024 * 1024)) catch |err| {
         switch (err) {
-            error.FileTooBig, error.OutOfMemory => return error.OutOfMemory,
+            error.OutOfMemory => return error.OutOfMemory,
             else => return error.CannotReadFile,
         }
     };

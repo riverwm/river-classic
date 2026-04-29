@@ -148,8 +148,8 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
 
     server.* = .{
         .wl_server = wl_server,
-        .sigint_source = try loop.addSignal(*wl.Server, posix.SIG.INT, terminate, wl_server),
-        .sigterm_source = try loop.addSignal(*wl.Server, posix.SIG.TERM, terminate, wl_server),
+        .sigint_source = try loop.addSignal(*wl.Server, @intFromEnum(posix.SIG.INT), terminate, wl_server),
+        .sigterm_source = try loop.addSignal(*wl.Server, @intFromEnum(posix.SIG.TERM), terminate, wl_server),
 
         .fixes = try wlr.Fixes.create(wl_server, 1),
 

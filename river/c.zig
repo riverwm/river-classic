@@ -15,11 +15,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 pub const c = @cImport({
-    @cDefine("_POSIX_C_SOURCE", "200809L");
-
-    @cInclude("stdlib.h");
-    @cInclude("unistd.h");
-
     @cInclude("linux/input-event-codes.h");
     @cInclude("libevdev/libevdev.h");
 

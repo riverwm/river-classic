@@ -24,9 +24,9 @@ const PointerMapping = @import("PointerMapping.zig");
 const SwitchMapping = @import("SwitchMapping.zig");
 
 name: [:0]const u8,
-mappings: std.ArrayListUnmanaged(Mapping) = .{},
-pointer_mappings: std.ArrayListUnmanaged(PointerMapping) = .{},
-switch_mappings: std.ArrayListUnmanaged(SwitchMapping) = .{},
+mappings: std.ArrayList(Mapping) = .empty,
+pointer_mappings: std.ArrayList(PointerMapping) = .empty,
+switch_mappings: std.ArrayList(SwitchMapping) = .empty,
 
 pub fn deinit(mode: *Mode) void {
     util.gpa.free(mode.name);

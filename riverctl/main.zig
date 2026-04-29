@@ -17,8 +17,11 @@
 const std = @import("std");
 const mem = std.mem;
 const fs = std.fs;
+const Io = std.Io;
 const posix = std.posix;
 const assert = std.debug.assert;
+const process = std.process;
+const fatal = process.fatal;
 const builtin = @import("builtin");
 
 const wayland = @import("wayland");
@@ -38,6 +41,15 @@ const usage =
     \\
 ;
 
+const io = Io.Threaded.global_single_threaded.io();
+var stdout_buffer: [64]u8 = undefined;
+var stdout_writer = Io.File.stdout().writer(io, &stdout_buffer);
+const stdout = &stdout_writer.interface;
+
+var stderr_buffer: [64]u8 = undefined;
+var stderr_writer = Io.File.stderr().writer(io, &stderr_buffer);
+const stderr = &stderr_writer.interface;
+
 const gpa = std.heap.c_allocator;
 
 pub const Globals = struct {
@@ -45,8 +57,8 @@ pub const Globals = struct {
     seat: ?*wl.Seat = null,
 };
 
-pub fn main() !void {
-    _main() catch |err| {
+pub fn main(init: std.process.Init.Minimal) !void {
+    _main(init) catch |err| {
         switch (err) {
             error.RiverControlNotAdvertised => fatal(
                 \\The Wayland server does not support river-control-unstable-v1.
@@ -57,7 +69,7 @@ pub fn main() !void {
             , .{}),
             error.ConnectFailed => {
                 std.log.err("Unable to connect to the Wayland server.", .{});
-                if (posix.getenvZ("WAYLAND_DISPLAY") == null) {
+                if (init.environ.getPosix("WAYLAND_DISPLAY") == null) {
                     fatal("WAYLAND_DISPLAY is not set.", .{});
                 } else {
                     fatal("Does WAYLAND_DISPLAY contain the socket name of a running server?", .{});
@@ -68,21 +80,24 @@ pub fn main() !void {
     };
 }
 
-fn _main() !void {
-    const result = flags.parser([*:0]const u8, &.{
+fn _main(init: std.process.Init.Minimal) !void {
+    const args = try init.args.toSlice(gpa);
+    defer gpa.free(args);
+
+    const result = flags.parser(&.{
         .{ .name = "h", .kind = .boolean },
         .{ .name = "version", .kind = .boolean },
-    }).parse(std.os.argv[1..]) catch {
-        try fs.File.stderr().writeAll(usage);
-        posix.exit(1);
+    }).parse(args[1..]) catch {
+        try stderr.writeAll(usage);
+        process.exit(1);
     };
     if (result.flags.h) {
-        try fs.File.stdout().writeAll(usage);
-        posix.exit(0);
+        try stdout.writeAll(usage);
+        process.exit(0);
     }
     if (result.flags.version) {
-        try fs.File.stdout().writeAll(@import("build_options").version ++ "\n");
-        posix.exit(0);
+        try stdout.writeAll(@import("build_options").version ++ "\n");
+        process.exit(0);
     }
 
     const display = try wl.Display.connect(null);
@@ -125,24 +140,18 @@ fn callbackListener(_: *zriver.CommandCallbackV1, event: zriver.CommandCallbackV
     switch (event) {
         .success => |success| {
             if (mem.len(success.output) > 0) {
-                var stdout = fs.File.stdout().writer(&.{});
-                stdout.interface.print("{s}\n", .{success.output}) catch @panic("failed to write to stdout");
+                stdout.print("{s}\n", .{success.output}) catch @panic("failed to write to stdout");
             }
-            posix.exit(0);
+            process.exit(0);
         },
         .failure => |failure| {
             // A small hack to provide usage text when river reports an unknown command.
             if (mem.orderZ(u8, failure.failure_message, "unknown command") == .eq) {
                 std.log.err("unknown command", .{});
-                fs.File.stderr().writeAll(usage) catch {};
-                posix.exit(1);
+                stderr.writeAll(usage) catch {};
+                process.exit(1);
             }
             fatal("{s}", .{failure.failure_message});
         },
     }
-}
-
-fn fatal(comptime format: []const u8, args: anytype) noreturn {
-    std.log.err(format, args);
-    posix.exit(1);
 }

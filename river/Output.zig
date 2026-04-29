@@ -537,7 +537,7 @@ fn handleFrame(listener: *wl.Listener(*wlr.Output), _: *wlr.Output) void {
         error.CommitFailed => log.err("output commit failed for {s}", .{output.wlr_output.name}),
     };
 
-    var now = posix.clock_gettime(.MONOTONIC) catch @panic("CLOCK_MONOTONIC not supported");
+    var now = util.timestamp();
     scene_output.sendFrameDone(&now);
 }
 

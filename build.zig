@@ -4,6 +4,9 @@ const Build = std.Build;
 const fs = std.fs;
 const mem = std.mem;
 
+const manifest = @import("build.zig.zon");
+const version = manifest.version;
+
 const Scanner = @import("wayland").Scanner;
 
 pub fn build(b: *Build) !void {
@@ -12,6 +15,7 @@ pub fn build(b: *Build) !void {
 
     const strip = b.option(bool, "strip", "Omit debug information") orelse false;
     const pie = b.option(bool, "pie", "Build a Position Independent Executable") orelse false;
+    const use_llvm = b.option(bool, "llvm", "Force use of Zig's LLVM backend and the lld linker") orelse false;
 
     const omit_frame_pointer = switch (optimize) {
         .Debug, .ReleaseSafe => false,
@@ -25,7 +29,6 @@ pub fn build(b: *Build) !void {
     ) orelse scdoc_found: {
         _ = b.findProgram(&.{"scdoc"}, &.{}) catch |err| switch (err) {
             error.FileNotFound => break :scdoc_found false,
-            else => return err,
         };
         break :scdoc_found true;
     };
@@ -61,7 +64,7 @@ pub fn build(b: *Build) !void {
             const git_describe_long = b.runAllowFail(
                 &.{ "git", "-C", b.build_root.path orelse ".", "describe", "--long" },
                 &ret,
-                .Inherit,
+                .inherit,
             ) catch break :blk version;
 
             var it = mem.splitScalar(u8, mem.trim(u8, git_describe_long, &std.ascii.whitespace), '-');
@@ -162,17 +165,19 @@ pub fn build(b: *Build) !void {
                 .target = target,
                 .optimize = optimize,
                 .strip = strip,
+                .link_libc = true,
             }),
+            .use_llvm = use_llvm,
+            .use_lld = use_llvm,
         });
         river.root_module.addOptions("build_options", options);
 
-        river.linkLibC();
-        river.linkSystemLibrary("libevdev");
-        river.linkSystemLibrary("libinput");
-        river.linkSystemLibrary("wayland-server");
-        river.linkSystemLibrary("wlroots-0.20");
-        river.linkSystemLibrary("xkbcommon");
-        river.linkSystemLibrary("pixman-1");
+        river.root_module.linkSystemLibrary("libevdev", .{});
+        river.root_module.linkSystemLibrary("libinput", .{});
+        river.root_module.linkSystemLibrary("wayland-server", .{});
+        river.root_module.linkSystemLibrary("wlroots-0.20", .{});
+        river.root_module.linkSystemLibrary("xkbcommon", .{});
+        river.root_module.linkSystemLibrary("pixman-1", .{});
 
         river.root_module.addImport("wayland", wayland);
         river.root_module.addImport("xkbcommon", xkbcommon);
@@ -181,7 +186,7 @@ pub fn build(b: *Build) !void {
         river.root_module.addImport("flags", flags);
         river.root_module.addImport("globber", globber);
 
-        river.addCSourceFile(.{
+        river.root_module.addCSourceFile(.{
             .file = b.path("river/wlroots_log_wrapper.c"),
             .flags = &.{ "-std=c99", "-O2" },
         });
@@ -200,14 +205,16 @@ pub fn build(b: *Build) !void {
                 .target = target,
                 .optimize = optimize,
                 .strip = strip,
+                .link_libc = true,
             }),
+            .use_llvm = use_llvm,
+            .use_lld = use_llvm,
         });
         riverctl.root_module.addOptions("build_options", options);
 
         riverctl.root_module.addImport("flags", flags);
         riverctl.root_module.addImport("wayland", wayland);
-        riverctl.linkLibC();
-        riverctl.linkSystemLibrary("wayland-client");
+        riverctl.root_module.linkSystemLibrary("wayland-client", .{});
 
         riverctl.pie = pie;
         riverctl.root_module.omit_frame_pointer = omit_frame_pointer;
@@ -223,14 +230,16 @@ pub fn build(b: *Build) !void {
                 .target = target,
                 .optimize = optimize,
                 .strip = strip,
+                .link_libc = true,
             }),
+            .use_llvm = use_llvm,
+            .use_lld = use_llvm,
         });
         rivertile.root_module.addOptions("build_options", options);
 
         rivertile.root_module.addImport("flags", flags);
         rivertile.root_module.addImport("wayland", wayland);
-        rivertile.linkLibC();
-        rivertile.linkSystemLibrary("wayland-client");
+        rivertile.root_module.linkSystemLibrary("wayland-client", .{});
 
         rivertile.pie = pie;
         rivertile.root_module.omit_frame_pointer = omit_frame_pointer;
@@ -263,7 +272,7 @@ pub fn build(b: *Build) !void {
             // This makes the caching work for the Workaround, and the extra argument is ignored by /bin/sh.
             scdoc.addFileArg(b.path("doc/" ++ page ++ ".1.scd"));
 
-            const stdout = scdoc.captureStdOut();
+            const stdout = scdoc.captureStdOut(.{});
             b.getInstallStep().dependOn(&b.addInstallFile(stdout, "share/man/man1/" ++ page ++ ".1").step);
         }
     }
@@ -294,31 +303,3 @@ pub fn build(b: *Build) !void {
         test_step.dependOn(&run_globber_test.step);
     }
 }
-
-const version = manifest.version;
-/// Getting rid of this wart requires upstream zig improvements.
-/// See: https://github.com/ziglang/zig/issues/22775
-const manifest: struct {
-    name: @Type(.enum_literal),
-    version: []const u8,
-    paths: []const []const u8,
-    dependencies: struct {
-        pixman: struct {
-            url: []const u8,
-            hash: []const u8,
-        },
-        wayland: struct {
-            url: []const u8,
-            hash: []const u8,
-        },
-        wlroots: struct {
-            url: []const u8,
-            hash: []const u8,
-        },
-        xkbcommon: struct {
-            url: []const u8,
-            hash: []const u8,
-        },
-    },
-    fingerprint: u64,
-} = @import("build.zig.zon");

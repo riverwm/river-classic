@@ -55,7 +55,7 @@ tablet_manager: *wlr.TabletManagerV2,
 
 /// List of input device configurations. Ordered by glob generality, with
 /// the most general towards the start and the most specific towards the end.
-configs: std.ArrayList(InputConfig) = .{},
+configs: std.ArrayList(InputConfig) = .empty,
 
 devices: wl.list.Head(InputDevice, .link),
 seats: wl.list.Head(Seat, .link),

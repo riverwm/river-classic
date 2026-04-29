@@ -15,9 +15,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 const std = @import("std");
-const posix = std.posix;
+const c = std.c;
 
-const c = @import("../c.zig").c;
 const util = @import("../util.zig");
 const process = @import("../process.zig");
 
@@ -35,26 +34,46 @@ pub fn spawn(
 
     const child_args = [_:null]?[*:0]const u8{ "/bin/sh", "-c", args[1], null };
 
-    const pid = posix.fork() catch {
-        out.* = try std.fmt.allocPrint(util.gpa, "fork/execve failed", .{});
-        return Error.Other;
+    const pid: c.pid_t = blk: {
+        const rc = c.fork();
+        if (c.errno(rc) != .SUCCESS) {
+            out.* = try std.fmt.allocPrint(util.gpa, "fork/execve failed", .{});
+            return Error.Other;
+        }
+        break :blk @intCast(rc);
     };
 
     if (pid == 0) {
         process.cleanupChild();
 
-        const pid2 = posix.fork() catch c._exit(1);
+        const pid2: c.pid_t = blk: {
+            const rc = c.fork();
+            if (c.errno(rc) != .SUCCESS) {
+                c._exit(1);
+            }
+            break :blk @intCast(rc);
+        };
+
         if (pid2 == 0) {
-            posix.execveZ("/bin/sh", &child_args, std.c.environ) catch c._exit(1);
+            _ = c.execve("/bin/sh", &child_args, c.environ);
+            c._exit(1); // only reachable if execve fails
         }
 
         c._exit(0);
     }
 
     // Wait the intermediate child.
-    const ret = posix.waitpid(pid, 0);
-    if (!posix.W.IFEXITED(ret.status) or
-        (posix.W.IFEXITED(ret.status) and posix.W.EXITSTATUS(ret.status) != 0))
+    const status: u32 = while (true) {
+        var status: c_int = 0;
+        switch (c.errno(c.waitpid(pid, &status, 0))) {
+            .SUCCESS => break @bitCast(status),
+            .INTR => continue,
+            else => return Error.Unexpected, // should never happen, but don't trust the kernel
+        }
+    };
+
+    if (!c.W.IFEXITED(status) or
+        (c.W.IFEXITED(status) and c.W.EXITSTATUS(status) != 0))
     {
         out.* = try std.fmt.allocPrint(util.gpa, "fork/execve failed", .{});
         return Error.Other;

@@ -31,7 +31,7 @@ const View = @import("View.zig");
 const log = std.log.scoped(.river_status);
 
 resources: wl.list.Head(zriver.OutputStatusV1, null),
-view_tags: std.ArrayListUnmanaged(u32) = .{},
+view_tags: std.ArrayList(u32) = .empty,
 focused_tags: u32 = 0,
 urgent_tags: u32 = 0,
 

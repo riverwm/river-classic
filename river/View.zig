@@ -498,7 +498,7 @@ pub fn rootSurface(view: View) ?*wlr.Surface {
 pub fn sendFrameDone(view: View) void {
     assert(view.mapped and !view.destroying);
 
-    const now = posix.clock_gettime(.MONOTONIC) catch @panic("CLOCK_MONOTONIC not supported");
+    const now = util.timestamp();
     view.rootSurface().?.sendFrameDone(&now);
 }
 

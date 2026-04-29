@@ -59,7 +59,7 @@ fn bind(client: *wl.Client, control: *Control, version: u32, id: u32) void {
         client.postNoMemory();
         return;
     };
-    control.args_map.putNoClobber(.{ .client = client, .id = id }, .{}) catch {
+    control.args_map.putNoClobber(.{ .client = client, .id = id }, .empty) catch {
         control_v1.destroy();
         client.postNoMemory();
         return;

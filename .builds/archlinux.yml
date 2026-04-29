@@ -34,16 +34,18 @@ tasks:
       cd ..
 
       # Eat Github's resources rather than the Zig Software Foundation's resources!
-      wget -nv https://github.com/ifreund/zig-tarball-mirror/releases/download/0.15.1/zig-x86_64-linux-0.15.1.tar.xz
-      tar xf zig-x86_64-linux-0.15.1.tar.xz
-      sudo mv zig-x86_64-linux-0.15.1/zig /usr/bin/
-      sudo mv zig-x86_64-linux-0.15.1/lib /usr/lib/zig
+      wget -nv https://github.com/ifreund/zig-tarball-mirror/releases/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
+      tar xf zig-x86_64-linux-0.16.0.tar.xz
+      sudo mv zig-x86_64-linux-0.16.0/zig /usr/bin/
+      sudo mv zig-x86_64-linux-0.16.0/lib /usr/lib/zig
   - build: |
       cd river-classic
-      zig build --summary all
+      # Arch's glibc version has SFrame sections in crt objects, force llvm/lld usage as a workaround
+      # https://codeberg.org/ziglang/zig/issues/31272
+      zig build -Dllvm --summary all
   - build_xwayland: |
       cd river-classic
-      zig build --summary all -Dxwayland
+      zig build -Dllvm --summary all -Dxwayland
   - fmt: |
       cd river-classic
       zig fmt --check river/

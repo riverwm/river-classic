@@ -35,7 +35,7 @@ pub fn focusView(
     args: []const [:0]const u8,
     _: *?[]const u8,
 ) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "skip-floating", .kind = .boolean },
     }).parse(args[1..]) catch {
         return error.InvalidValue;

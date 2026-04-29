@@ -42,7 +42,7 @@ pub fn map(
     args: []const [:0]const u8,
     out: *?[]const u8,
 ) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "release", .kind = .boolean },
         .{ .name = "repeat", .kind = .boolean },
         .{ .name = "layout", .kind = .arg },
@@ -366,7 +366,7 @@ fn parseSwitchState(
 /// Example:
 /// unmap normal Mod4+Shift Return
 pub fn unmap(seat: *Seat, args: []const [:0]const u8, out: *?[]const u8) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "release", .kind = .boolean },
     }).parse(args[1..]) catch {
         return error.InvalidValue;

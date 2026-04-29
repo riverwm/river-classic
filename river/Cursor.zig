@@ -158,7 +158,7 @@ focus_follows_cursor_target: ?*View = null,
 
 /// Keeps track of the last known location of all touch points in layout coordinates.
 /// This information is necessary for proper touch dnd support if there are multiple touch points.
-touch_points: std.AutoHashMapUnmanaged(i32, LayoutPoint) = .{},
+touch_points: std.AutoHashMapUnmanaged(i32, LayoutPoint) = .empty,
 
 axis: wl.Listener(*wlr.Pointer.event.Axis) = wl.Listener(*wlr.Pointer.event.Axis).init(handleAxis),
 frame: wl.Listener(*wlr.Cursor) = wl.Listener(*wlr.Cursor).init(handleFrame),
@@ -1151,15 +1151,7 @@ pub fn updateState(cursor: *Cursor) void {
         .passthrough => {
             cursor.updateFocusFollowsCursorTarget();
             if (!cursor.hidden) {
-                const now = posix.clock_gettime(.MONOTONIC) catch @panic("CLOCK_MONOTONIC not supported");
-                // 2^32-1 milliseconds is ~50 days, which is a realistic uptime.
-                // This means that we must wrap if the monotonic time is greater than
-                // 2^32-1 milliseconds and hope that clients don't get too confused.
-                const msec: u32 = @intCast(@rem(
-                    now.sec *% std.time.ms_per_s +% @divTrunc(now.nsec, std.time.ns_per_ms),
-                    math.maxInt(u32),
-                ));
-                cursor.passthrough(msec);
+                cursor.passthrough(util.msecTimestamp());
             }
         },
         // TODO: Leave down mode if the target surface is no longer visible.

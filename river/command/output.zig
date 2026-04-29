@@ -54,10 +54,10 @@ pub fn sendToOutput(
     _: *?[]const u8,
 ) Error!void {
     if (args.len < 2) return Error.NotEnoughArguments;
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "current-tags", .kind = .boolean },
     }).parse(args[1..]) catch {
-        return error.InvalidOption;
+        return error.InvalidValue;
     };
     if (result.args.len < 1) return Error.NotEnoughArguments;
     if (result.args.len > 1) return Error.TooManyArguments;

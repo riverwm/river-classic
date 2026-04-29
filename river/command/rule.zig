@@ -45,7 +45,7 @@ const Action = enum {
 };
 
 pub fn ruleAdd(_: *Seat, args: []const [:0]const u8, _: *?[]const u8) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "app-id", .kind = .arg },
         .{ .name = "title", .kind = .arg },
     }).parse(args[1..]) catch {
@@ -147,7 +147,7 @@ pub fn ruleAdd(_: *Seat, args: []const [:0]const u8, _: *?[]const u8) Error!void
 }
 
 pub fn ruleDel(_: *Seat, args: []const [:0]const u8, _: *?[]const u8) Error!void {
-    const result = flags.parser([:0]const u8, &.{
+    const result = flags.parser(&.{
         .{ .name = "app-id", .kind = .arg },
         .{ .name = "title", .kind = .arg },
     }).parse(args[1..]) catch {
@@ -218,7 +218,7 @@ fn apply_tearing_rules() void {
     }
 }
 
-fn alignLeft(buf: []const u8, width: usize, writer: *std.io.Writer) Error!void {
+fn alignLeft(buf: []const u8, width: usize, writer: *std.Io.Writer) Error!void {
     assert(buf.len <= width);
     try writer.writeAll(buf);
     try writer.splatByteAll(' ', width - buf.len);
@@ -244,7 +244,7 @@ pub fn listRules(_: *Seat, args: []const [:0]const u8, out: *?[]const u8) Error!
     const app_id_column_max = 2 + @max("app-id".len, max_glob_len.app_id);
     const title_column_max = 2 + @max("title".len, max_glob_len.title);
 
-    var buffer = std.io.Writer.Allocating.init(util.gpa);
+    var buffer = std.Io.Writer.Allocating.init(util.gpa);
     defer buffer.deinit();
     const writer = &buffer.writer;
 

@@ -16,15 +16,19 @@
 
 const build_options = @import("build_options");
 const std = @import("std");
-const mem = std.mem;
+const Io = std.Io;
 const fs = std.fs;
 const log = std.log;
+const mem = std.mem;
 const posix = std.posix;
+const exit = std.process.exit;
+const fatal = std.process.fatal;
+const c = std.c;
+
 const builtin = @import("builtin");
 const wlr = @import("wlroots");
 const flags = @import("flags");
 
-const c = @import("c.zig").c;
 const util = @import("util.zig");
 const process = @import("process.zig");
 
@@ -43,30 +47,43 @@ const usage: []const u8 =
 
 pub var server: Server = undefined;
 
-pub fn main() anyerror!void {
-    const result = flags.parser([*:0]const u8, &.{
+pub fn main(init: std.process.Init.Minimal) anyerror!void {
+    const io = std.Io.Threaded.global_single_threaded.io();
+
+    var stdout_buffer: [64]u8 = undefined;
+    var stdout_writer = Io.File.stdout().writer(io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    var stderr_buffer: [64]u8 = undefined;
+    var stderr_writer = Io.File.stderr().writer(io, &stderr_buffer);
+    const stderr = &stderr_writer.interface;
+
+    const args = try init.args.toSlice(util.gpa);
+    defer util.gpa.free(args);
+
+    const result = flags.parser(&.{
         .{ .name = "h", .kind = .boolean },
         .{ .name = "version", .kind = .boolean },
         .{ .name = "c", .kind = .arg },
         .{ .name = "log-level", .kind = .arg },
         .{ .name = "no-xwayland", .kind = .boolean },
-    }).parse(std.os.argv[1..]) catch {
-        try fs.File.stderr().writeAll(usage);
-        posix.exit(1);
+    }).parse(args[1..]) catch {
+        try stderr.writeAll(usage);
+        exit(1);
     };
     if (result.flags.h) {
-        try fs.File.stdout().writeAll(usage);
-        posix.exit(0);
+        try stdout.writeAll(usage);
+        exit(0);
     }
     if (result.args.len != 0) {
         log.err("unknown option '{s}'", .{result.args[0]});
-        try fs.File.stderr().writeAll(usage);
-        posix.exit(1);
+        try stderr.writeAll(usage);
+        exit(1);
     }
 
     if (result.flags.version) {
-        try fs.File.stdout().writeAll(build_options.version ++ "\n");
-        posix.exit(0);
+        try stdout.writeAll(build_options.version ++ "\n");
+        exit(0);
     }
     if (result.flags.@"log-level") |level| {
         if (mem.eql(u8, level, "error")) {
@@ -79,8 +96,8 @@ pub fn main() anyerror!void {
             runtime_log_level = .debug;
         } else {
             log.err("invalid log level '{s}'", .{level});
-            try fs.File.stderr().writeAll(usage);
-            posix.exit(1);
+            try stderr.writeAll(usage);
+            exit(1);
         }
     }
     const runtime_xwayland = !result.flags.@"no-xwayland";
@@ -88,7 +105,7 @@ pub fn main() anyerror!void {
         if (result.flags.c) |command| {
             break :blk try util.gpa.dupeZ(u8, command);
         } else {
-            break :blk try defaultInitPath();
+            break :blk try defaultInitPath(io, init.environ);
         }
     };
 
@@ -120,10 +137,20 @@ pub fn main() anyerror!void {
     const child_pgid = if (startup_command) |cmd| blk: {
         log.info("running init executable '{s}'", .{cmd});
         const child_args = [_:null]?[*:0]const u8{ "/bin/sh", "-c", cmd, null };
-        const pid = try posix.fork();
+
+        const pid: c.pid_t = pid: {
+            const rc = c.fork();
+            switch (c.errno(rc)) {
+                .SUCCESS => {},
+                else => |err| fatal("failed to start init process: {}", .{err}),
+            }
+            break :pid @intCast(rc);
+        };
+
         if (pid == 0) {
             process.cleanupChild();
-            posix.execveZ("/bin/sh", &child_args, std.c.environ) catch c._exit(1);
+            _ = c.execve("/bin/sh", &child_args, c.environ);
+            c._exit(1); // only reachable if execve fails
         }
         util.gpa.free(cmd);
         // Since the child has called setsid, the pid is the pgid
@@ -140,22 +167,21 @@ pub fn main() anyerror!void {
     log.info("shutting down", .{});
 }
 
-fn defaultInitPath() !?[:0]const u8 {
+fn defaultInitPath(io: Io, environ: std.process.Environ) !?[:0]const u8 {
     const path = blk: {
-        if (posix.getenv("XDG_CONFIG_HOME")) |xdg_config_home| {
+        if (environ.getPosix("XDG_CONFIG_HOME")) |xdg_config_home| {
             break :blk try fs.path.joinZ(util.gpa, &[_][]const u8{ xdg_config_home, "river/init" });
-        } else if (posix.getenv("HOME")) |home| {
+        } else if (environ.getPosix("HOME")) |home| {
             break :blk try fs.path.joinZ(util.gpa, &[_][]const u8{ home, ".config/river/init" });
         } else {
             return null;
         }
     };
 
-    posix.accessZ(path, posix.X_OK) catch |err| {
+    Io.Dir.cwd().access(io, path, .{ .execute = true }) catch |err| {
         if (err == error.PermissionDenied) {
-            if (posix.accessZ(path, posix.R_OK)) {
-                log.err("failed to run init executable {s}: the file is not executable", .{path});
-                posix.exit(1);
+            if (Io.Dir.cwd().access(io, path, .{})) {
+                fatal("failed to run init executable {s}: the file is not executable", .{path});
             } else |_| {}
         }
         log.err("failed to run init executable {s}: {s}", .{ path, @errorName(err) });
@@ -186,13 +212,7 @@ pub fn logFn(
 ) void {
     if (@intFromEnum(level) > @intFromEnum(runtime_log_level)) return;
 
-    const scope_prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
-
-    var buffer: [256]u8 = undefined;
-    const stderr = std.debug.lockStderrWriter(&buffer);
-    defer std.debug.unlockStderrWriter();
-
-    stderr.print(level.asText() ++ scope_prefix ++ format ++ "\n", args) catch {};
+    std.log.defaultLog(level, scope, format, args);
 }
 
 /// See wlroots_log_wrapper.c

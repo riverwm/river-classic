@@ -471,10 +471,7 @@ pub fn runCommand(seat: *Seat, args: []const [:0]const u8) void {
         return;
     };
     if (out) |s| {
-        var stdout = std.fs.File.stdout().writer(&.{});
-        stdout.interface.print("{s}", .{s}) catch |err| {
-            std.log.scoped(.command).err("{s}: write to stdout failed {}", .{ args[0], err });
-        };
+        std.log.scoped(.command).info("mapped command output: {s}", .{s});
     }
 }
 

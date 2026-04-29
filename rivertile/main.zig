@@ -40,6 +40,8 @@ const fmt = std.fmt;
 const mem = std.mem;
 const math = std.math;
 const posix = std.posix;
+const process = std.process;
+const fatal = std.process.fatal;
 const assert = std.debug.assert;
 
 const wayland = @import("wayland");
@@ -307,8 +309,20 @@ const Output = struct {
     }
 };
 
-pub fn main() !void {
-    const result = flags.parser([*:0]const u8, &[_]flags.Flag{
+pub fn main(init: std.process.Init.Minimal) !void {
+    const args = try init.args.toSlice(gpa);
+    defer gpa.free(args);
+
+    const io = std.Io.Threaded.global_single_threaded.io();
+    var stdout_buffer: [64]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    var stderr_buffer: [64]u8 = undefined;
+    var stderr_writer = std.Io.File.stderr().writer(io, &stderr_buffer);
+    const stderr = &stderr_writer.interface;
+
+    const result = flags.parser(&.{
         .{ .name = "h", .kind = .boolean },
         .{ .name = "version", .kind = .boolean },
         .{ .name = "view-padding", .kind = .arg },
@@ -316,19 +330,19 @@ pub fn main() !void {
         .{ .name = "main-location", .kind = .arg },
         .{ .name = "main-count", .kind = .arg },
         .{ .name = "main-ratio", .kind = .arg },
-    }).parse(std.os.argv[1..]) catch {
-        try std.fs.File.stderr().writeAll(usage);
-        posix.exit(1);
+    }).parse(args[1..]) catch {
+        try stderr.writeAll(usage);
+        process.exit(1);
     };
     if (result.flags.h) {
-        try std.fs.File.stdout().writeAll(usage);
-        posix.exit(0);
+        try stdout.writeAll(usage);
+        process.exit(0);
     }
     if (result.args.len != 0) fatalPrintUsage("unknown option '{s}'", .{result.args[0]});
 
     if (result.flags.version) {
-        try std.fs.File.stdout().writeAll(@import("build_options").version ++ "\n");
-        posix.exit(0);
+        try stdout.writeAll(@import("build_options").version ++ "\n");
+        process.exit(0);
     }
     if (result.flags.@"view-padding") |raw| {
         view_padding = fmt.parseUnsigned(u31, raw, 10) catch
@@ -356,8 +370,7 @@ pub fn main() !void {
     }
 
     const display = wl.Display.connect(null) catch {
-        std.debug.print("Unable to connect to Wayland server.\n", .{});
-        posix.exit(1);
+        fatal("Unable to connect to Wayland server.\n", .{});
     };
     defer display.disconnect();
 
@@ -407,15 +420,10 @@ fn registryListener(registry: *wl.Registry, event: wl.Registry.Event, context: *
     }
 }
 
-fn fatal(comptime format: []const u8, args: anytype) noreturn {
-    std.log.err(format, args);
-    posix.exit(1);
-}
-
 fn fatalPrintUsage(comptime format: []const u8, args: anytype) noreturn {
     std.log.err(format, args);
-    std.fs.File.stderr().writeAll(usage) catch {};
-    posix.exit(1);
+    std.debug.print(usage, .{});
+    process.exit(1);
 }
 
 fn saturatingCast(comptime T: type, x: anytype) T {
