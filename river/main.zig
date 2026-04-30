@@ -69,20 +69,24 @@ pub fn main(init: std.process.Init.Minimal) anyerror!void {
         .{ .name = "no-xwayland", .kind = .boolean },
     }).parse(args[1..]) catch {
         try stderr.writeAll(usage);
+        try stderr.flush();
         exit(1);
     };
     if (result.flags.h) {
         try stdout.writeAll(usage);
+        try stdout.flush();
         exit(0);
     }
     if (result.args.len != 0) {
         log.err("unknown option '{s}'", .{result.args[0]});
         try stderr.writeAll(usage);
+        try stderr.flush();
         exit(1);
     }
 
     if (result.flags.version) {
         try stdout.writeAll(build_options.version ++ "\n");
+        try stdout.flush();
         exit(0);
     }
     if (result.flags.@"log-level") |level| {
@@ -97,6 +101,7 @@ pub fn main(init: std.process.Init.Minimal) anyerror!void {
         } else {
             log.err("invalid log level '{s}'", .{level});
             try stderr.writeAll(usage);
+            try stderr.flush();
             exit(1);
         }
     }
