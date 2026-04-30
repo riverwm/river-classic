@@ -332,16 +332,19 @@ pub fn main(init: std.process.Init.Minimal) !void {
         .{ .name = "main-ratio", .kind = .arg },
     }).parse(args[1..]) catch {
         try stderr.writeAll(usage);
+        try stderr.flush();
         process.exit(1);
     };
     if (result.flags.h) {
         try stdout.writeAll(usage);
+        try stdout.flush();
         process.exit(0);
     }
     if (result.args.len != 0) fatalPrintUsage("unknown option '{s}'", .{result.args[0]});
 
     if (result.flags.version) {
         try stdout.writeAll(@import("build_options").version ++ "\n");
+        try stdout.flush();
         process.exit(0);
     }
     if (result.flags.@"view-padding") |raw| {

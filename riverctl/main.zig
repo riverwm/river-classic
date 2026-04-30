@@ -89,14 +89,17 @@ fn _main(init: std.process.Init.Minimal) !void {
         .{ .name = "version", .kind = .boolean },
     }).parse(args[1..]) catch {
         try stderr.writeAll(usage);
+        try stderr.flush();
         process.exit(1);
     };
     if (result.flags.h) {
         try stdout.writeAll(usage);
+        try stdout.flush();
         process.exit(0);
     }
     if (result.flags.version) {
         try stdout.writeAll(@import("build_options").version ++ "\n");
+        try stdout.flush();
         process.exit(0);
     }
 
@@ -149,6 +152,7 @@ fn callbackListener(_: *zriver.CommandCallbackV1, event: zriver.CommandCallbackV
             if (mem.orderZ(u8, failure.failure_message, "unknown command") == .eq) {
                 std.log.err("unknown command", .{});
                 stderr.writeAll(usage) catch {};
+                stderr.flush() catch {};
                 process.exit(1);
             }
             fatal("{s}", .{failure.failure_message});
