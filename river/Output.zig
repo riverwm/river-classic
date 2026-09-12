@@ -247,14 +247,12 @@ pub fn create(wlr_output: *wlr.Output) !void {
     var height: c_int = undefined;
     wlr_output.effectiveResolution(&width, &height);
 
-    const scene_output = try server.root.scene.createSceneOutput(wlr_output);
-
     const tree = try server.root.layers.outputs.createSceneTree();
     const normal_content = try tree.createSceneTree();
 
     output.* = .{
         .wlr_output = wlr_output,
-        .scene_output = scene_output,
+        .scene_output = undefined,
         .all_link = undefined,
         .active_link = undefined,
         .tree = tree,
@@ -294,6 +292,13 @@ pub fn create(wlr_output: *wlr.Output) !void {
     };
     wlr_output.data = output;
 
+    // Keep this listener first so scene-output teardown cannot leave output
+    // listeners behind when the backend destroys an output.
+    wlr_output.events.destroy.add(&output.destroy);
+    errdefer output.destroy.link.remove();
+
+    output.scene_output = try server.root.scene.createSceneOutput(wlr_output);
+
     output.layouts.init();
 
     output.pending.focus_stack.init();
@@ -306,7 +311,6 @@ pub fn create(wlr_output: *wlr.Output) !void {
     _ = try output.layers.fullscreen.createSceneRect(width, height, &[_]f32{ 0, 0, 0, 1.0 });
     output.layers.fullscreen.node.setEnabled(false);
 
-    wlr_output.events.destroy.add(&output.destroy);
     wlr_output.events.request_state.add(&output.request_state);
     wlr_output.events.frame.add(&output.frame);
     wlr_output.events.present.add(&output.present);
@@ -415,6 +419,9 @@ fn handleDestroy(listener: *wl.Listener(*wlr.Output), _: *wlr.Output) void {
 
     log.debug("output '{s}' destroyed", .{output.wlr_output.name});
 
+    output.all_link.remove();
+    output.scene_output.destroy();
+
     // Remove the destroyed output from root if it wasn't already removed
     server.root.deactivateOutput(output);
 
@@ -424,8 +431,6 @@ fn handleDestroy(listener: *wl.Listener(*wlr.Output), _: *wlr.Output) void {
     assert(output.inflight.wm_stack.empty());
     assert(output.inflight.layout_demand == null);
     assert(output.layouts.length() == 0);
-
-    output.all_link.remove();
 
     output.destroy.link.remove();
     output.request_state.link.remove();
