@@ -31,11 +31,13 @@ const log = std.log.scoped(.switch_device);
 pub const Type = enum {
     lid,
     tablet,
+    keypad_slide,
 };
 
 pub const State = union(Type) {
     lid: LidState,
     tablet: TabletState,
+    keypad_slide: KeypadSlideState,
 };
 
 pub const LidState = enum {
@@ -46,6 +48,11 @@ pub const LidState = enum {
 pub const TabletState = enum {
     off,
     on,
+};
+
+pub const KeypadSlideState = enum {
+    out,
+    in,
 };
 
 device: InputDevice,
@@ -90,6 +97,13 @@ fn handleToggle(listener: *wl.Listener(*wlr.Switch.event.Toggle), event: *wlr.Sw
             switch_state = switch (event.switch_state) {
                 .off => .{ .tablet = .off },
                 .on => .{ .tablet = .on },
+            };
+        },
+        .keypad_slide => {
+            switch_type = .keypad_slide;
+            switch_state = switch (event.switch_state) {
+                .off => .{ .keypad_slide = .in },
+                .on => .{ .keypad_slide = .out },
             };
         },
     }

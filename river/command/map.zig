@@ -358,6 +358,20 @@ fn parseSwitchState(
             };
             return Switch.State{ .tablet = tablet_state };
         },
+        .keypad_slide => {
+            const keypad_state = meta.stringToEnum(
+                Switch.KeypadSlideState,
+                switch_state_str,
+            ) orelse {
+                out.* = try std.fmt.allocPrint(
+                    util.gpa,
+                    "invalid keypad slide state '{s}', must be 'in' or 'out'",
+                    .{switch_state_str},
+                );
+                return Error.Other;
+            };
+            return Switch.State{ .keypad_slide = keypad_state };
+        }
     }
 }
 
