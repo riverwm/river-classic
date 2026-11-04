@@ -53,7 +53,7 @@ pub fn init(
 
             const owned_args = try arena_allocator.alloc([:0]const u8, command_args.len);
             for (command_args, 0..) |arg, i| {
-                owned_args[i] = try arena_allocator.dupeZ(u8, arg);
+                owned_args[i] = try arena_allocator.dupeSentinel(u8, arg, 0);
             }
 
             break :blk .{ .command = owned_args };

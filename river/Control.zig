@@ -71,7 +71,7 @@ fn handleRequest(control_v1: *zriver.ControlV1, request: zriver.ControlV1.Reques
     switch (request) {
         .destroy => control_v1.destroy(),
         .add_argument => |add_argument| {
-            const owned_slice = util.gpa.dupeZ(u8, mem.sliceTo(add_argument.argument, 0)) catch {
+            const owned_slice = util.gpa.dupeSentinel(u8, mem.sliceTo(add_argument.argument, 0), 0) catch {
                 control_v1.getClient().postNoMemory();
                 return;
             };
@@ -109,7 +109,7 @@ fn handleRequest(control_v1: *zriver.ControlV1, request: zriver.ControlV1.Reques
                         callback.getClient().postNoMemory();
                         return;
                     },
-                    command.Error.Other => util.gpa.dupeZ(u8, out.?) catch {
+                    command.Error.Other => util.gpa.dupeSentinel(u8, out.?, 0) catch {
                         callback.getClient().postNoMemory();
                         return;
                     },
@@ -121,7 +121,7 @@ fn handleRequest(control_v1: *zriver.ControlV1, request: zriver.ControlV1.Reques
             };
 
             const success_message = if (out) |s|
-                util.gpa.dupeZ(u8, s) catch {
+                util.gpa.dupeSentinel(u8, s, 0) catch {
                     callback.getClient().postNoMemory();
                     return;
                 }

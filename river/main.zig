@@ -108,7 +108,7 @@ pub fn main(init: std.process.Init.Minimal) anyerror!void {
     const runtime_xwayland = !result.flags.@"no-xwayland";
     const startup_command = blk: {
         if (result.flags.c) |command| {
-            break :blk try util.gpa.dupeZ(u8, command);
+            break :blk try util.gpa.dupeSentinel(u8, command, 0);
         } else {
             break :blk try defaultInitPath(io, init.environ);
         }
@@ -215,7 +215,7 @@ pub fn logFn(
     comptime format: []const u8,
     args: anytype,
 ) void {
-    if (@intFromEnum(level) > @intFromEnum(runtime_log_level)) return;
+    if (@backingInt(level) > @backingInt(runtime_log_level)) return;
 
     std.log.defaultLog(level, scope, format, args);
 }

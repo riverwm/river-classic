@@ -148,8 +148,8 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
 
     server.* = .{
         .wl_server = wl_server,
-        .sigint_source = try loop.addSignal(*wl.Server, @intFromEnum(posix.SIG.INT), terminate, wl_server),
-        .sigterm_source = try loop.addSignal(*wl.Server, @intFromEnum(posix.SIG.TERM), terminate, wl_server),
+        .sigint_source = try loop.addSignal(*wl.Server, @backingInt(posix.SIG.INT), terminate, wl_server),
+        .sigterm_source = try loop.addSignal(*wl.Server, @backingInt(posix.SIG.TERM), terminate, wl_server),
 
         .fixes = try wlr.Fixes.create(wl_server, 1),
 
@@ -206,7 +206,7 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
         .lock_manager = undefined,
     };
 
-    if (renderer.getTextureFormats(@intFromEnum(wlr.BufferCap.dmabuf)) != null) {
+    if (renderer.getTextureFormats(@backingInt(wlr.BufferCap.dmabuf)) != null) {
         server.linux_dmabuf = try wlr.LinuxDmabufV1.createWithRenderer(wl_server, 4, renderer);
     }
     if (renderer.features.timeline and backend.features.timeline) {

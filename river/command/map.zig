@@ -270,11 +270,11 @@ fn parseKeysym(name: [:0]const u8, out: *?[]const u8) !xkb.Keysym {
     // This has been fixed upstream in libxkbcommon 1.7.0
     // https://github.com/xkbcommon/libxkbcommon/pull/465
     // TODO remove the workaround once libxkbcommon 1.7.0 is widely distributed.
-    if (@intFromEnum(keysym) == xkb.Keysym.XF86Screensaver) {
+    if (@backingInt(keysym) == xkb.Keysym.XF86Screensaver) {
         if (mem.eql(u8, name, "XF86Screensaver")) {
             return keysym;
         } else if (mem.eql(u8, name, "XF86ScreenSaver")) {
-            return @enumFromInt(xkb.Keysym.XF86ScreenSaver);
+            return @fromBackingInt(@intCast(xkb.Keysym.XF86ScreenSaver));
         } else {
             out.* = try fmt.allocPrint(util.gpa, "ambiguous keysym name '{s}'", .{name});
             return Error.Other;

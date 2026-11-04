@@ -307,14 +307,14 @@ pub fn apply(config: *const InputConfig, device: *InputDevice) void {
     const libinput_device: *c.libinput_device = @ptrCast(device.wlr_device.getLibinputDevice() orelse return);
     log.debug("applying input configuration '{s}' to device '{s}'.", .{ config.glob, device.identifier });
 
-    inline for (@typeInfo(InputConfig).@"struct".fields) |field| {
-        if (comptime mem.eql(u8, field.name, "glob")) continue;
+    inline for (@typeInfo(InputConfig).@"struct".field_names) |field_name| {
+        if (comptime mem.eql(u8, field_name, "glob")) continue;
 
-        if (@field(config, field.name)) |setting| {
-            log.debug("applying setting: {s}", .{field.name});
-            if (comptime mem.eql(u8, field.name, "scroll-factor")) {
+        if (@field(config, field_name)) |setting| {
+            log.debug("applying setting: {s}", .{field_name});
+            if (comptime mem.eql(u8, field_name, "scroll-factor")) {
                 setting.apply(device);
-            } else if (comptime mem.eql(u8, field.name, "map-to-output")) {
+            } else if (comptime mem.eql(u8, field_name, "map-to-output")) {
                 setting.apply(device);
             } else {
                 setting.apply(libinput_device);
@@ -324,27 +324,28 @@ pub fn apply(config: *const InputConfig, device: *InputDevice) void {
 }
 
 pub fn parse(config: *InputConfig, setting: []const u8, value: []const u8) !void {
-    inline for (@typeInfo(InputConfig).@"struct".fields) |field| {
-        if (comptime mem.eql(u8, field.name, "glob")) continue;
+    const config_type = @typeInfo(InputConfig).@"struct";
+    inline for (config_type.field_names, 0..) |field_name, i| {
+        if (comptime mem.eql(u8, field_name, "glob")) continue;
 
-        if (mem.eql(u8, setting, field.name)) {
+        if (mem.eql(u8, setting, field_name)) {
             // Special-case the settings which are not enums.
-            if (comptime mem.eql(u8, field.name, "pointer-accel")) {
+            if (comptime mem.eql(u8, field_name, "pointer-accel")) {
                 config.@"pointer-accel" = PointerAccel{
                     .value = math.clamp(try std.fmt.parseFloat(f32, value), -1.0, 1.0),
                 };
-            } else if (comptime mem.eql(u8, field.name, "scroll-factor")) {
+            } else if (comptime mem.eql(u8, field_name, "scroll-factor")) {
                 const unvalidated = try std.fmt.parseFloat(f32, value);
                 if (unvalidated > 0) {
                     config.@"scroll-factor" = ScrollFactor{ .value = unvalidated };
                 } else {
                     return error.OutOfBounds;
                 }
-            } else if (comptime mem.eql(u8, field.name, "scroll-button")) {
+            } else if (comptime mem.eql(u8, field_name, "scroll-button")) {
                 const ret = c.libevdev_event_code_from_name(c.EV_KEY, value.ptr);
                 if (ret < 1) return error.InvalidButton;
                 config.@"scroll-button" = ScrollButton{ .button = @intCast(ret) };
-            } else if (comptime mem.eql(u8, field.name, "map-to-output")) {
+            } else if (comptime mem.eql(u8, field_name, "map-to-output")) {
                 const output_name_owned = blk: {
                     if (mem.eql(u8, value, "disabled")) {
                         break :blk null;
@@ -358,11 +359,12 @@ pub fn parse(config: *InputConfig, setting: []const u8, value: []const u8) !void
                 }
                 config.@"map-to-output" = .{ .output_name = output_name_owned };
             } else {
-                const T = @typeInfo(field.type).optional.child;
+                const field_type = config_type.field_types[i];
+                const T = @typeInfo(field_type).optional.child;
                 if (@typeInfo(T) != .@"enum") {
                     @compileError("You forgot to implement parsing for an input configuration setting.");
                 }
-                @field(config, field.name) = meta.stringToEnum(T, value) orelse
+                @field(config, field_name) = meta.stringToEnum(T, value) orelse
                     return error.UnknownOption;
             }
 
@@ -376,31 +378,33 @@ pub fn parse(config: *InputConfig, setting: []const u8, value: []const u8) !void
 pub fn write(config: *InputConfig, writer: *std.Io.Writer) !void {
     try writer.print("{s}\n", .{config.glob});
 
-    inline for (@typeInfo(InputConfig).@"struct".fields) |field| {
-        if (comptime mem.eql(u8, field.name, "glob")) continue;
+    const config_type = @typeInfo(InputConfig).@"struct";
+    inline for (config_type.field_names, 0..) |field_name, i| {
+        if (comptime mem.eql(u8, field_name, "glob")) continue;
 
-        if (comptime mem.eql(u8, field.name, "map-to-output")) {
-            if (@field(config, field.name)) |@"map-to-output"| {
+        if (comptime mem.eql(u8, field_name, "map-to-output")) {
+            if (@field(config, field_name)) |@"map-to-output"| {
                 try writer.print("\tmap-to-output: {s}\n", .{@"map-to-output".output_name orelse "disabled"});
             }
-        } else if (comptime mem.eql(u8, field.name, "scroll-factor")) {
-            if (@field(config, field.name)) |@"scroll-offset"| {
+        } else if (comptime mem.eql(u8, field_name, "scroll-factor")) {
+            if (@field(config, field_name)) |@"scroll-offset"| {
                 try writer.print("\tscroll-factor: {d}\n", .{@"scroll-offset".value});
             }
-        } else if (@field(config, field.name)) |setting| {
+        } else if (@field(config, field_name)) |setting| {
             // Special-case the settings which are not enums.
-            if (comptime mem.eql(u8, field.name, "pointer-accel")) {
+            if (comptime mem.eql(u8, field_name, "pointer-accel")) {
                 try writer.print("\tpointer-accel: {d}\n", .{setting.value});
-            } else if (comptime mem.eql(u8, field.name, "scroll-button")) {
+            } else if (comptime mem.eql(u8, field_name, "scroll-button")) {
                 try writer.print("\tscroll-button: {s}\n", .{
                     mem.sliceTo(c.libevdev_event_code_get_name(c.EV_KEY, setting.button), 0),
                 });
             } else {
-                const T = @typeInfo(field.type).optional.child;
+                const field_type = config_type.field_types[i];
+                const T = @typeInfo(field_type).optional.child;
                 if (@typeInfo(T) != .@"enum") {
                     @compileError("You forgot to implement listing for an input configuration setting.");
                 }
-                try writer.print("\t{s}: {s}\n", .{ field.name, @tagName(setting) });
+                try writer.print("\t{s}: {s}\n", .{ field_name, @tagName(setting) });
             }
         }
     }

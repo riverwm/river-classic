@@ -32,7 +32,7 @@ pub fn init(
     errdefer util.gpa.free(owned_args);
     for (command_args, 0..) |arg, i| {
         errdefer for (owned_args[0..i]) |a| util.gpa.free(a);
-        owned_args[i] = try util.gpa.dupeZ(u8, arg);
+        owned_args[i] = try util.gpa.dupeSentinel(u8, arg, 0);
     }
     return SwitchMapping{
         .switch_type = switch_type,

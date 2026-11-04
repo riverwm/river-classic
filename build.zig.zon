@@ -13,20 +13,20 @@
             .hash = "pixman-0.3.0-LClMnz2VAAAs7QSCGwLimV5VUYx0JFnX5xWU6HwtMuDX",
         },
         .wayland = .{
-            .url = "https://codeberg.org/ifreund/zig-wayland/archive/v0.6.0.tar.gz",
-            .hash = "wayland-0.6.0-lQa1kqz8AQADQmdNJsNhLoNHcnEGEUjrOaPV-dtEnEmX",
+            .url = "https://codeberg.org/ifreund/zig-wayland/archive/v0.7.0.tar.gz",
+            .hash = "wayland-0.7.0-lQa1kuP8AQD5dW7_o-VKLVD_QbqXe7Zob78r2su7Pyex",
         },
         .wlroots = .{
-            .url = "https://codeberg.org/ifreund/zig-wlroots/archive/v0.20.1.tar.gz",
-            .hash = "wlroots-0.20.1-jmOlcqNVBAB3uB5oqBTzpRlwu-FmMyyZMVAWCe5kmcSt",
+            .url = "git+https://codeberg.org/ifreund/zig-wlroots#cd0d62bcd20d4ed4f35d5320bf040bb4e35b7da3",
+            .hash = "wlroots-0.20.2-dev-jmOlcgdwBADuxKW_PFUfSPjBaZ34a1fNuBqF8gb2nz6O",
         },
         .xkbcommon = .{
             .url = "https://codeberg.org/ifreund/zig-xkbcommon/archive/v0.3.0.tar.gz",
             .hash = "xkbcommon-0.3.0-VDqIe3K9AQB2fG5ZeRcMC9i7kfrp5m2rWgLrmdNn9azr",
         },
         .translate_c = .{
-            .url = "git+https://codeberg.org/ziglang/translate-c/#7a1a9fdc4ab00835748a6657ecbb835e3d5d45f7",
-            .hash = "translate_c-0.0.0-Q_BUWvP1BgCjAk6PWv5286tOlvzD9-X-NkuTzh0KxY0Q",
+            .url = "git+https://codeberg.org/ziglang/translate-c.git?ref=2.0.0#0da7a16c3235b935b82421646076e0657cda21f6",
+            .hash = "translate_c-2.0.0-Q_BUWltOBwA0229IE8wwSxxGzOxyRso3hvcb1nN8oJX_",
         },
     },
     .fingerprint = 0x3dae7aba2ea52a3b,

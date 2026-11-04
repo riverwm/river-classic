@@ -157,13 +157,13 @@ pub fn init() !Config {
     // Start with two empty modes, "normal" and "locked"
     {
         // Normal mode, id 0
-        const owned_slice = try util.gpa.dupeZ(u8, "normal");
+        const owned_slice = try util.gpa.dupeSentinel(u8, "normal", 0);
         try config.mode_to_id.putNoClobber(owned_slice, 0);
         config.modes.appendAssumeCapacity(.{ .name = owned_slice });
     }
     {
         // Locked mode, id 1
-        const owned_slice = try util.gpa.dupeZ(u8, "locked");
+        const owned_slice = try util.gpa.dupeSentinel(u8, "locked", 0);
         try config.mode_to_id.putNoClobber(owned_slice, 1);
         config.modes.appendAssumeCapacity(.{ .name = owned_slice });
     }

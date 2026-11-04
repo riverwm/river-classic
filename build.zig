@@ -27,12 +27,8 @@ pub fn build(b: *Build) !void {
         bool,
         "man-pages",
         "Set to true to build man pages. Requires scdoc. Defaults to true if scdoc is found.",
-    ) orelse scdoc_found: {
-        _ = b.findProgram(&.{"scdoc"}, &.{}) catch |err| switch (err) {
-            error.FileNotFound => break :scdoc_found false,
-        };
-        break :scdoc_found true;
-    };
+    ) orelse
+        (b.findProgram(.{ .names = &.{"scdoc"} }) != null);
 
     const bash_completion = b.option(
         bool,
@@ -63,7 +59,7 @@ pub fn build(b: *Build) !void {
             var ret: u8 = undefined;
 
             const git_describe_long = b.runAllowFail(
-                &.{ "git", "-C", b.build_root.path orelse ".", "describe", "--long" },
+                &.{ "git", "-C", b.fmt("{f}", .{b.root}), "describe", "--long" },
                 &ret,
                 .inherit,
             ) catch break :blk version;
@@ -149,12 +145,6 @@ pub fn build(b: *Build) !void {
     wlroots.addImport("xkbcommon", xkbcommon);
     wlroots.addImport("pixman", pixman);
 
-    // We need to ensure the wlroots include path obtained from pkg-config is
-    // exposed to the wlroots module for @cImport() to work. This seems to be
-    // the best way to do so with the current std.Build API.
-    wlroots.resolved_target = target;
-    wlroots.linkSystemLibrary("wlroots-0.20", .{});
-
     const flags = b.createModule(.{ .root_source_file = b.path("common/flags.zig") });
     const globber = b.createModule(.{ .root_source_file = b.path("common/globber.zig") });
 
@@ -163,9 +153,12 @@ pub fn build(b: *Build) !void {
         .c_source_file = b.path("river/c.h"),
         .target = target,
         .optimize = optimize,
+        .link_system_libs = &.{
+            .{ .name = "wlroots-0.20" },
+            .{ .name = "libevdev" },
+            .{ .name = "libinput" },
+        },
     });
-    translate_c.linkSystemLibrary("libevdev", .{});
-    translate_c.linkSystemLibrary("libinput", .{});
 
     {
         const river = b.addExecutable(.{
@@ -260,16 +253,17 @@ pub fn build(b: *Build) !void {
 
     {
         const wf = Build.Step.WriteFile.create(b);
-        const pc_file = wf.add("river-protocols.pc", b.fmt(
-            \\prefix={s}
-            \\datadir=${{prefix}}/share
-            \\pkgdatadir=${{datadir}}/river-protocols
-            \\
-            \\Name: river-protocols
-            \\URL: https://codeberg.org/river/river
-            \\Description: protocol files for the river wayland compositor
-            \\Version: {s}
-        , .{ b.install_prefix, full_version }));
+        const pc_writer = b.addExecutable(.{
+            .name = "pkg_config_writer",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("build/pkg_config.zig"),
+                .target = b.graph.host,
+            }),
+        });
+        const pc_writer_run = b.addRunArtifact(pc_writer);
+        pc_writer_run.addDirectoryArg2(.{ .relative = .{ .base = .deployed_prefix } }, .{});
+        pc_writer_run.addArg(version);
+        const pc_file = wf.addCopyFile(pc_writer_run.captureStdOut(.{}), "river-protocols.pc");
 
         b.installFile("protocol/river-layout-v3.xml", "share/river-protocols/river-layout-v3.xml");
         b.getInstallStep().dependOn(&b.addInstallFile(pc_file, "share/pkgconfig/river-protocols.pc").step);

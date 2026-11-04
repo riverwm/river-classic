@@ -167,7 +167,7 @@ fn handleRequest(layout_v3: *river.LayoutV3, request: river.LayoutV3.Request, la
             if (layout.output.layout_name == null or
                 !mem.eql(u8, layout.output.layout_name.?, new_name))
             {
-                const owned = util.gpa.dupeZ(u8, new_name) catch {
+                const owned = util.gpa.dupeSentinel(u8, new_name, 0) catch {
                     log.err("out of memory", .{});
                     return;
                 };

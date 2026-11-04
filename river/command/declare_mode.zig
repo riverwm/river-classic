@@ -41,7 +41,7 @@ pub fn declareMode(
     try config.mode_to_id.ensureUnusedCapacity(1);
     try config.modes.ensureUnusedCapacity(util.gpa, 1);
 
-    const owned_name = try util.gpa.dupeZ(u8, new_mode_name);
+    const owned_name = try util.gpa.dupeSentinel(u8, new_mode_name, 0);
 
     const id: u32 = @intCast(config.modes.items.len);
     config.mode_to_id.putAssumeCapacityNoClobber(owned_name, id);

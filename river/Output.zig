@@ -330,7 +330,7 @@ pub fn layerSurfaceTree(output: Output, layer: zwlr.LayerShellV1.Layer) *wlr.Sce
         output.layers.top,
         output.layers.overlay,
     };
-    return trees[@intCast(@intFromEnum(layer))];
+    return trees[@intCast(@backingInt(layer))];
 }
 
 /// Arrange all layer surfaces of this output and adjust the usable area.
