@@ -17,16 +17,16 @@
             .hash = "wayland-0.7.0-lQa1kuP8AQD5dW7_o-VKLVD_QbqXe7Zob78r2su7Pyex",
         },
         .wlroots = .{
-            .url = "git+https://codeberg.org/ifreund/zig-wlroots#cd0d62bcd20d4ed4f35d5320bf040bb4e35b7da3",
-            .hash = "wlroots-0.20.2-dev-jmOlcgdwBADuxKW_PFUfSPjBaZ34a1fNuBqF8gb2nz6O",
+            .url = "https://codeberg.org/ifreund/zig-wlroots/archive/v0.20.3.tar.gz",
+            .hash = "wlroots-0.20.3-jmOlcsh0BACce9rpfvzUI4V3AalGg9GE0QQkvRFoHo1c",
         },
         .xkbcommon = .{
-            .url = "https://codeberg.org/ifreund/zig-xkbcommon/archive/v0.3.0.tar.gz",
-            .hash = "xkbcommon-0.3.0-VDqIe3K9AQB2fG5ZeRcMC9i7kfrp5m2rWgLrmdNn9azr",
+            .url = "https://codeberg.org/ifreund/zig-xkbcommon/archive/v0.5.0.tar.gz",
+            .hash = "xkbcommon-0.5.0-VDqIe8y3AgDU-cGL02xZplwABH3WbpTimrrgbgTgD_3g",
         },
         .translate_c = .{
-            .url = "git+https://codeberg.org/ziglang/translate-c.git?ref=2.0.0#0da7a16c3235b935b82421646076e0657cda21f6",
-            .hash = "translate_c-2.0.0-Q_BUWltOBwA0229IE8wwSxxGzOxyRso3hvcb1nN8oJX_",
+            .url = "git+https://codeberg.org/ziglang/translate-c?ref=zig-0.17.x#cfac21f3199b2b02ce3fd7db652aa456421fe4ab",
+            .hash = "translate_c-2.0.2-Q_BUWvBNBwDnyehSiuAJmdFcMYHYGA-Jc3KiYdrV2Dqx",
         },
     },
     .fingerprint = 0x3dae7aba2ea52a3b,

@@ -259,7 +259,7 @@ fn handleKey(listener: *wl.Listener(*wlr.Keyboard.event.Key), event: *wlr.Keyboa
 }
 
 fn isModifier(keysym: xkb.Keysym) bool {
-    return @backingInt(keysym) >= xkb.Keysym.Shift_L and @backingInt(keysym) <= xkb.Keysym.Hyper_R;
+    return @backingInt(keysym) >= @backingInt(xkb.Keysym.Shift_L) and @backingInt(keysym) <= @backingInt(xkb.Keysym.Hyper_R);
 }
 
 fn handleModifiers(listener: *wl.Listener(*wlr.Keyboard), _: *wlr.Keyboard) void {
@@ -282,10 +282,10 @@ fn handleModifiers(listener: *wl.Listener(*wlr.Keyboard), _: *wlr.Keyboard) void
 /// Returns true if the keysym was handled.
 fn handleBuiltinMapping(keysym: xkb.Keysym) bool {
     switch (@backingInt(keysym)) {
-        xkb.Keysym.XF86Switch_VT_1...xkb.Keysym.XF86Switch_VT_12 => {
+        @backingInt(xkb.Keysym.XF86Switch_VT_1)...@backingInt(xkb.Keysym.XF86Switch_VT_12) => {
             log.debug("switch VT keysym received", .{});
             if (server.session) |session| {
-                const vt = @backingInt(keysym) - xkb.Keysym.XF86Switch_VT_1 + 1;
+                const vt = @backingInt(keysym) - @backingInt(xkb.Keysym.XF86Switch_VT_1) + 1;
                 const log_server = std.log.scoped(.server);
                 log_server.info("switching to VT {}", .{vt});
                 session.changeVt(vt) catch log_server.err("changing VT failed", .{});
